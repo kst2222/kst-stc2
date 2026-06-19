@@ -6,7 +6,7 @@
     <title>STスコアシート (KST)</title>
     <style>
         body { font-family: sans-serif; background: #f0f2f5; padding: 10px; margin: 0; display: flex; flex-direction: column; align-items: center; }
-        #setup, #match { background: white; padding: 20px; border-radius: 8px; width: 100%; max-width: 360px; box-sizing: border-box; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        #auth-screen, #setup, #match { background: white; padding: 20px; border-radius: 8px; width: 100%; max-width: 360px; box-sizing: border-box; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         .hidden { display: none !important; }
         input, button, select { width: 100%; padding: 10px; margin: 5px 0; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box; }
         button { background: #4CAF50; color: white; font-weight: bold; cursor: pointer; border: none; }
@@ -91,7 +91,7 @@
         /* 印刷・PDF保存用スタイル */
         @media print {
             body { background: white; padding: 0; margin: 0; }
-            #setup, #match, #edit-popup, button, .match-controls-row, .section-title, #main-court-parent, #main-controls-parent, .pos-option-area {
+            #setup, #match, #edit-popup, button, .match-controls-row, .section-title, #main-court-parent, #main-controls-parent, .pos-option-area, #auth-screen {
                 display: none !important;
             }
             #print-report-area {
@@ -110,7 +110,27 @@
     </style>
 </head>
 <body>
-    <div id="setup">
+    <div id="auth-screen" class="hidden">
+        <h3 style="margin-top:0; color:#2b6cb0; border-bottom:2px solid #edf2f7; padding-bottom:6px; text-align:center;">🔒 ライセンス認証ゲート</h3>
+        <p style="font-size:12px; color:#4a5568; line-height:1.5;">このアプリは許可された端末でのみ利用可能です。利用を開始するには、下記の**デバイスID**を管理者（<a href="mailto:office@kst.kyoto">office@kst.kyoto</a>）へ伝え、発行された【解除キー】を入力してください。</p>
+        
+        <div style="background:#edf2f7; padding:10px; border-radius:6px; text-align:center; margin:12px 0; border:1px dashed #cbd5e0;">
+            <span style="font-size:11px; color:#718096; font-weight:bold; display:block;">あなたのデバイスID</span>
+            <strong id="label-device-id" style="font-size:16px; color:#2d3748; font-family:monospace; letter-spacing:1px;">KST-UNKNOWN</strong>
+        </div>
+
+        <input type="text" id="input-auth-key" placeholder="解除キーを入力してください" style="text-align:center; font-family:monospace; font-size:14px; text-transform:uppercase;">
+        <button type="button" style="background:#2b6cb0; margin-top:6px;" onclick="window.submitAuthKey()">ライセンスを認証して起動</button>
+
+        <div id="admin-generator-box" class="hidden" style="margin-top:20px; padding:12px; background:#fff3cd; border-radius:6px; border:1px solid #ffeeba;">
+            <h4 style="margin:0 0 6px 0; color:#856404; font-size:12px; text-align:center;">🔑 【管理者モード】解除キー即時発行機</h4>
+            <input type="text" id="input-admin-target-id" placeholder="相手のデバイスID (例: KST-A1B2C3)" style="font-size:12px; text-align:center; text-transform:uppercase;">
+            <button type="button" style="background:#e65100; font-size:11px; padding:6px;" onclick="window.generateKeyFromAdmin()">解除キーを自動計算</button>
+            <div id="admin-result-key" style="margin-top:6px; font-weight:bold; font-size:14px; color:#d32f2f; text-align:center; font-family:monospace;"></div>
+        </div>
+    </div>
+
+    <div id="setup" class="hidden">
         <h3>味方</h3>
         <input id="A1" value="高橋" placeholder="後衛の名前">
         <input id="A2" value="佐藤" placeholder="前衛の名前">
@@ -321,6 +341,68 @@
     <div id="print-report-area"></div>
 
     <script>
+        // 【新規追加】鉄壁のデバイスアクティベーション認証システム
+        window.initDeviceAuthentication = function() {
+            // ローカルストレージにデバイス固有のランダム文字列を発行・永続保存
+            if (!localStorage.getItem('KST_DEVICE_ID')) {
+                let seed = Math.random().toString(36).substring(2, 8).toUpperCase();
+                localStorage.setItem('KST_DEVICE_ID', 'KST-' + seed);
+            }
+            let deviceId = localStorage.getItem('KST_DEVICE_ID');
+            document.getElementById('label-device-id').innerText = deviceId;
+
+            // すでに過去に認証済みの端末ならそのままスルーして起動
+            if (localStorage.getItem('KST_AUTH_PASSED') === 'OK_TRUE_2026') {
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('setup').classList.remove('hidden');
+                window.renderSavedMatchesList();
+            } else {
+                // 未認証ならゲートを開く
+                document.getElementById('auth-screen').classList.remove('hidden');
+                document.getElementById('setup').classList.add('hidden');
+            }
+        };
+
+        // 解除キーの判定（他人に使い回せない端末独自の計算）
+        window.submitAuthKey = function() {
+            let userKey = document.getElementById('input-auth-key').value.trim().toUpperCase();
+            let deviceId = localStorage.getItem('KST_DEVICE_ID'); // 例: KST-A1B2C3
+            let rawCore = deviceId.replace('KST-', ''); // A1B2C3
+
+            // 裏コマンド：もし office@kst.kyoto さん自身がその場でキーを発行したい場合
+            if (userKey === 'KST-MASTER-OFFICE') {
+                document.getElementById('admin-generator-box').classList.remove('hidden');
+                document.getElementById('input-auth-key').value = '';
+                alert('【管理者モード】発行機が起動しました。');
+                return;
+            }
+
+            // アルゴリズム：IDの英数字を反転させて、末尾に「99」をくっつけたものを唯一無二の正規キーとする
+            let validKey = rawCore.split('').reverse().join('') + '99';
+
+            if (userKey === validKey) {
+                localStorage.setItem('KST_AUTH_PASSED', 'OK_TRUE_2026');
+                alert('認証に成功しました！アプリを起動します。');
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('setup').classList.remove('hidden');
+                window.renderSavedMatchesList();
+            } else {
+                alert('解除キーが正しくありません。シリアル番号を office@kst.kyoto までご連絡ください。');
+            }
+        };
+
+        // 【管理者用】相手のデバイスIDから、そのスマホ専用の解除キーを自動算出する機能
+        window.generateKeyFromAdmin = function() {
+            let targetId = document.getElementById('input-admin-target-id').value.trim().toUpperCase();
+            if (!targetId.startsWith('KST-') || targetId.length < 5) {
+                alert('正しいデバイスIDを入力してください (例: KST-X4R9B2)');
+                return;
+            }
+            let core = targetId.replace('KST-', '');
+            let calculatedKey = core.split('').reverse().join('') + '99';
+            document.getElementById('admin-result-key').innerText = "生成キー: " + calculatedKey;
+        };
+
         window.ptsA = 0;          
         window.ptsB = 0;          
         window.gamesA = 0;        
@@ -389,7 +471,6 @@
             }
         };
 
-        // 【追加】コート上の軌跡ドットを1つだけ消去する快適機能
         window.undoCourtClick = function() {
             if (window.isViewOnlyMode && window.editingIndex === null) return;
             if (window.clicks.length > 0) {
@@ -398,7 +479,6 @@
             }
         };
 
-        // 【追加】配置した前衛・後衛のポジションピンを両方クリアするリセット機能
         window.clearCourtPos = function() {
             if (window.isViewOnlyMode && window.editingIndex === null) return;
             window.posV = null;
@@ -1280,7 +1360,8 @@
         window.undoCourtClick = undoCourtClick;
         window.clearCourtPos = clearCourtPos;
 
-        window.renderSavedMatchesList();
+        // 【追加】認証の着火
+        window.initDeviceAuthentication();
     </script>
 </body>
 </html>
