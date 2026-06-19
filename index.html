@@ -48,10 +48,7 @@
         }
         svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
 
-        .player-group, #windArea { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; margin: 5px 0; }
-        #windArea { grid-template-columns: repeat(5, 1fr); margin-bottom: 12px; }
-        .windBtn { background: #e0e0e0; color: #333; padding: 5px; font-size: 11px; }
-        .activeWind { background: #2196F3; color: white; }
+        .player-group { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; margin: 5px 0; }
         
         .playerBtn { background: #e0e0e0; color: #333; height: 46px; font-size: 12px; line-height: 1.3; font-weight: bold; white-space: pre-line; }
         .playerBtn.active-player { background: #2196F3; color: white; } 
@@ -94,7 +91,7 @@
         /* 印刷・PDF保存用スタイル */
         @media print {
             body { background: white; padding: 0; margin: 0; }
-            #setup, #match, #edit-popup, button, .match-controls-row, .section-title, #main-court-parent, #main-controls-parent {
+            #setup, #match, #edit-popup, button, .match-controls-row, .section-title, #main-court-parent, #main-controls-parent, .pos-option-area {
                 display: none !important;
             }
             #print-report-area {
@@ -113,7 +110,6 @@
     </style>
 </head>
 <body>
-    <!-- 試合設定画面 -->
     <div id="setup">
         <h3>味方</h3>
         <input id="A1" value="高橋" placeholder="後衛の名前">
@@ -140,24 +136,32 @@
         </div>
     </div>
 
-    <!-- 試合開始後画面（1画面集中型） -->
     <div id="match" class="hidden">
         <div id="view-mode-banner" class="view-only-banner hidden">【過去データ閲覧中】メニューボタンで戻れます</div>
 
         <div class="section-title" style="margin-top:0;">現在のゲームカウント（得点板）</div>
         <table class="scoreboard" id="scoreboard" style="margin-top: 5px;"></table>
 
-        <!-- PDF出力ボタン（window. を完全配備） -->
         <button id="printPdfBtn" type="button" style="background:#2196F3; font-size:14px; margin: 4px 0 12px 0; padding:12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);" onclick="window.generatePrintReport()">📋 この試合の全ポイント明細PDFを出力・保存</button>
 
         <div style="text-align:center; margin:5px 0;">
             <span id="final-game-indicator" class="final-badge hidden">ファイナルゲーム進行中 (7点先取)</span>
         </div>
 
-        <!-- 固定用テニスコート配置コンテナ（onclickハンドラに window. を完全配備してタップを永久保証） -->
         <div id="main-court-parent">
             <div id="main-court-zone">
-                <div id="court-modal-title" style="font-size:12px; font-weight:bold; color:#2196F3; text-align:center;">ラリー終了後、まずここに軌跡をタップ（最大10球）</div>
+                <div id="court-modal-title" style="font-size:12px; font-weight:bold; color:#2196F3; text-align:center;">ラリー終了後、まずここに軌跡をタップ（最大30球）</div>
+                
+                <div class="pos-option-area" style="text-align:center; margin: 4px 0;">
+                    <span style="font-size:11px; color:#555; font-weight:bold;">位置記録:</span>
+                    <button type="button" id="btn-pos-v" style="width:auto; padding:4px 8px; font-size:11px; background:#757575; display:inline-block; margin:0 2px;" onclick="window.setPosMode('V')">前衛位置</button>
+                    <button type="button" id="btn-pos-b" style="width:auto; padding:4px 8px; font-size:11px; background:#757575; display:inline-block; margin:0 2px;" onclick="window.setPosMode('B')">後衛位置</button>
+                    <div style="margin-top:4px;">
+                        <button type="button" style="width:auto; padding:4px 10px; font-size:11px; background:#d32f2f; display:inline-block; margin:0 2px;" onclick="window.undoCourtClick()">↩ 軌跡を1つ消す</button>
+                        <button type="button" style="width:auto; padding:4px 10px; font-size:11px; background:#e65100; display:inline-block; margin:0 2px;" onclick="window.clearCourtPos()">✕ 前/後位置を消す</button>
+                    </div>
+                </div>
+
                 <div id="court-container" onclick="window.handleCourtClick(event)">
                     <div class="line base-top"></div><div class="line base-bottom"></div>
                     <div class="line side-left"></div><div class="line side-right"></div>
@@ -174,15 +178,26 @@
             </div>
         </div>
 
-        <!-- 固定用コントロール配置コンテナ（すべての onclick ハンドラに window. を完全バインド） -->
         <div id="main-controls-parent">
             <div id="input-controls-area">
-                <div id="windArea" class="control-wind">
-                    <button class="windBtn" onclick="window.changeWind(this, '追風')">↑追</button>
-                    <button class="windBtn" onclick="window.changeWind(this, '向風')">↓向</button>
-                    <button class="windBtn" onclick="window.changeWind(this, '左風')">→左</button>
-                    <button class="windBtn" onclick="window.changeWind(this, '右風')">←右</button>
-                    <button class="windBtn activeWind" onclick="window.changeWind(this, '無風')">〇無</button>
+                
+                <div id="serverServeArea" style="background: #edf2f7; padding: 8px; border-radius: 6px; margin-bottom: 12px; box-sizing: border-box; border: 1px solid #cbd5e0;">
+                    <div class="selector-row" style="margin: 2px 0;">
+                        <label style="width: 55px; font-size: 11px; font-weight: bold; text-align: right; color:#2b6cb0;">サーバー:</label>
+                        <div class="select-buttons" style="grid-template-columns: repeat(4, 1fr);">
+                            <button type="button" id="btn-srv-a1" onclick="window.setModalServer('A1')">味方後</button>
+                            <button type="button" id="btn-srv-a2" onclick="window.setModalServer('A2')">味方前</button>
+                            <button type="button" id="btn-srv-b1" onclick="window.setModalServer('B1')">相手後</button>
+                            <button type="button" id="btn-srv-b2" onclick="window.setModalServer('B2')">相手前</button>
+                        </div>
+                    </div>
+                    <div class="selector-row" style="margin: 6px 0 2px 0;">
+                        <label style="width: 55px; font-size: 11px; font-weight: bold; text-align: right; color:#2b6cb0;">サーブ:</label>
+                        <div class="select-buttons">
+                            <button type="button" id="btn-srv-1st" onclick="window.setModalServeType('1st')">1st</button>
+                            <button type="button" id="btn-srv-2nd" onclick="window.setModalServeType('2nd')">2nd</button>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="section-title" id="title-step1">❶ 選手をタップ</div>
@@ -213,22 +228,6 @@
                 </div>
 
                 <div class="section-title">❸ 細かい条件・結果の確認</div>
-                <div class="selector-row">
-                    <label>サーバー:</label>
-                    <div class="select-buttons" style="grid-template-columns: repeat(4, 1fr);">
-                        <button type="button" id="btn-srv-a1" onclick="window.setModalServer('A1')">味方後</button>
-                        <button type="button" id="btn-srv-a2" onclick="window.setModalServer('A2')">味方前</button>
-                        <button type="button" id="btn-srv-b1" onclick="window.setModalServer('B1')">相手後</button>
-                        <button type="button" id="btn-srv-b2" onclick="window.setModalServer('B2')">相手前</button>
-                    </div>
-                </div>
-                <div class="selector-row">
-                    <label>サーブ:</label>
-                    <div class="select-buttons">
-                        <button type="button" id="btn-srv-1st" onclick="window.setModalServeType('1st')">1st</button>
-                        <button type="button" id="btn-srv-2nd" onclick="window.setModalServeType('2nd')">2nd</button>
-                    </div>
-                </div>
                 <div class="selector-row">
                     <label>ハンド:</label>
                     <div class="select-buttons">
@@ -311,7 +310,6 @@
         </div>
     </div>
 
-    <!-- 履歴タップ専用モーダルポップアップ画面 -->
     <div id="edit-popup" class="hidden">
         <div id="popup-content-box">
             <h3 id="popup-title" style="margin-top:0; font-size:14px; color:#9c27b0; text-align:center; border-bottom:2px solid #e8d5f5; padding-bottom:6px;">【履歴の確認・修正画面】</h3>
@@ -320,7 +318,6 @@
         </div>
     </div>
 
-    <!-- 印刷・PDF保存専用レンダリングエリア（ここに自動で軌跡コート入りリストを生成） -->
     <div id="print-report-area"></div>
 
     <script>
@@ -344,11 +341,26 @@
         window.modalSelectedMissReason = '単純ミス'; 
 
         window.clicks = [];
+        window.posV = null; 
+        window.posB = null; 
+        window.posMode = 'trajectory'; 
+
         window.savedMatches = [];
         window.editingIndex = null; 
         window.isViewOnlyMode = false; 
         window.isMatchOver = false; 
         window.currentMatchStorageKey = null;
+
+        window.setPosMode = function(mode) {
+            if (window.isViewOnlyMode && window.editingIndex === null) return;
+            if (window.posMode === mode) {
+                window.posMode = 'trajectory';
+            } else {
+                window.posMode = mode;
+            }
+            document.getElementById('btn-pos-v').style.background = (window.posMode === 'V') ? '#9c27b0' : '#757575';
+            document.getElementById('btn-pos-b').style.background = (window.posMode === 'B') ? '#e65100' : '#757575';
+        };
 
         window.handleCourtClick = function(e) {
             if(window.isViewOnlyMode && window.editingIndex === null) return; 
@@ -358,10 +370,40 @@
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
             
-            if (window.clicks.length < 10) {
+            if (window.posMode === 'V') {
+                window.posV = {x: x, y: y};
+                window.setPosMode('trajectory');
+                window.drawDotsAndLines(window.modalSelectedResult === '得点' ? '得点' : '失点');
+                return;
+            }
+            if (window.posMode === 'B') {
+                window.posB = {x: x, y: y};
+                window.setPosMode('trajectory');
+                window.drawDotsAndLines(window.modalSelectedResult === '得点' ? '得点' : '失点');
+                return;
+            }
+
+            if (window.clicks.length < 30) {
                 window.clicks.push({x: x, y: y});
                 window.drawDotsAndLines(window.modalSelectedResult === '得点' ? '得点' : '失点');
             }
+        };
+
+        // 【追加】コート上の軌跡ドットを1つだけ消去する快適機能
+        window.undoCourtClick = function() {
+            if (window.isViewOnlyMode && window.editingIndex === null) return;
+            if (window.clicks.length > 0) {
+                window.clicks.pop();
+                window.drawDotsAndLines(window.modalSelectedResult === '得点' ? '得点' : '失点');
+            }
+        };
+
+        // 【追加】配置した前衛・後衛のポジションピンを両方クリアするリセット機能
+        window.clearCourtPos = function() {
+            if (window.isViewOnlyMode && window.editingIndex === null) return;
+            window.posV = null;
+            window.posB = null;
+            window.drawDotsAndLines(window.modalSelectedResult === '得点' ? '得点' : '失点');
         };
 
         window.syncAllPlayerNames = function() {
@@ -370,10 +412,10 @@
             const b1 = document.getElementById('B1').value || "鈴木";
             const b2 = document.getElementById('B2').value || "田中";
 
-            document.getElementById('btnA1').innerText = a1 + "\\n(味方後衛)";
-            document.getElementById('btnA2').innerText = a2 + "\\n(味方前衛)";
-            document.getElementById('btnB1').innerText = b1 + "\\n(相手後衛)";
-            document.getElementById('btnB2').innerText = b2 + "\\n(相手前衛)";
+            document.getElementById('btnA1').innerText = a1 + "\n(味方後衛)";
+            document.getElementById('btnA2').innerText = a2 + "\n(味方前衛)";
+            document.getElementById('btnB1').innerText = b1 + "\n(相手後衛)";
+            document.getElementById('btnB2').innerText = b2 + "\n(相手前衛)";
 
             document.getElementById('btn-srv-a1').innerText = a1;
             document.getElementById('btn-srv-a2').innerText = a2;
@@ -473,7 +515,7 @@
             const targetBtn = document.getElementById('btn' + playerCode);
             if(targetBtn) {
                 targetBtn.classList.add('active-player');
-                document.getElementById('selected-player-label').innerText = targetBtn.innerText.replace('\\n', ' ');
+                document.getElementById('selected-player-label').innerText = targetBtn.innerText.replace('\n', ' ');
             }
         };
 
@@ -595,16 +637,38 @@
                 const dot = document.createElement('div');
                 dot.className = 'dot';
                 dot.style.left = `${click.x}px`; dot.style.top = `${click.y}px`;
-                dot.innerText = index + 1;
+                
+                let dotLabel = index + 1;
+                if (index === 0) dotLabel = 'S';
+                else if (index === 1) dotLabel = 'R';
+                dot.innerText = dotLabel;
+
                 if (index === window.clicks.length - 1) {
                     dot.style.background = lineColor; dot.style.color = '#fff';
                 }
                 courtBox.appendChild(dot);
             });
+
+            if (window.posV) {
+                const vDot = document.createElement('div');
+                vDot.className = 'dot'; vDot.style.left = `${window.posV.x}px`; vDot.style.top = `${window.posV.y}px`;
+                vDot.innerText = '前'; vDot.style.background = '#9c27b0'; vDot.style.color = '#fff';
+                courtBox.appendChild(vDot);
+            }
+            if (window.posB) {
+                const bDot = document.createElement('div');
+                bDot.className = 'dot'; bDot.style.left = `${window.posB.x}px`; bDot.style.top = `${window.posB.y}px`;
+                bDot.innerText = '後'; bDot.style.background = '#e65100'; bDot.style.color = '#fff';
+                courtBox.appendChild(bDot);
+            }
         };
 
         window.resetInputState = function() {
             window.clicks = [];
+            window.posV = null; 
+            window.posB = null; 
+            window.setPosMode('trajectory');
+
             const courtBox = document.getElementById('court-container');
             const svgBox = document.getElementById('svg-canvas');
             if(courtBox) { courtBox.querySelectorAll('.dot').forEach(dot => dot.remove()); }
@@ -650,7 +714,7 @@
                 'B2': { name: b2Name, s1st: 0, s2ndTotal: 0, df: 0, win: 0, lose: 0 }
             };
 
-            let shotsMap = {};
+            let playerShotsMap = { 'A1': {}, 'A2': {}, 'B1': {}, 'B2': {} };
 
             window.savedMatches.forEach(log => {
                 if (players[log.server]) {
@@ -672,12 +736,15 @@
                 if (log.shot.startsWith('BT')) baseShotGroup = 'BT';
                 if (log.shot === 'DF') baseShotGroup = 'サーブ';
 
-                if (!shotsMap[baseShotGroup]) {
-                    shotsMap[baseShotGroup] = { success: 0, total: 0 };
-                }
-                shotsMap[baseShotGroup].total++;
-                if (log.result === '得点') {
-                    shotsMap[baseShotGroup].success++;
+                let pId = log.playerIdent;
+                if (playerShotsMap[pId]) {
+                    if (!playerShotsMap[pId][baseShotGroup]) {
+                        playerShotsMap[pId][baseShotGroup] = { success: 0, total: 0 };
+                    }
+                    playerShotsMap[pId][baseShotGroup].total++;
+                    if (log.result === '得点') {
+                        playerShotsMap[pId][baseShotGroup].success++;
+                    }
                 }
             });
 
@@ -700,24 +767,27 @@
             }
             html += `</table>`;
 
-            let hasShotsData = false;
-            let shotHtml = `<table class="report-table">
-                <tr><th>使ったショット群</th><th>成功本数 / 総本数</th><th>ショット成功率</th></tr>`;
-            
-            for (let shotGroup in shotsMap) {
-                hasShotsData = true;
-                let s = shotsMap[shotGroup];
-                let pct = Math.round((s.success / s.total) * 100);
-                shotHtml += `<tr>
-                    <td><strong>${shotGroup}</strong></td>
-                    <td>${s.success} / ${s.total}</td>
-                    <td style="font-weight:bold; color:${pct >= 50 ? '#2196F3' : '#718096'}">${pct}%</td>
-                </tr>`;
-            }
-            shotHtml += `</table>`;
-
-            if (hasShotsData) {
-                html += `<div class="section-title">🎯 ショット別成功率（実戦使用データのみ）</div>` + shotHtml;
+            html += `<div class="section-title">🎯 選手別のショット群別成功率</div>`;
+            for (let id in playerShotsMap) {
+                let pName = players[id].name;
+                let sMap = playerShotsMap[id];
+                let hasPData = Object.keys(sMap).length > 0;
+                
+                if (hasPData) {
+                    html += `<h4 style="margin: 6px 0 2px 0; font-size: 11px; color: #2196F3; text-align:left;">■ ${pName} のショット詳細</h4>`;
+                    html += `<table class="report-table">
+                        <tr><th>使ったショット群</th><th>成功 / 総数</th><th>ショット成功率</th></tr>`;
+                    for (let shotGroup in sMap) {
+                        let s = sMap[shotGroup];
+                        let pct = Math.round((s.success / s.total) * 100);
+                        html += `<tr>
+                            <td><strong>${shotGroup}</strong></td>
+                            <td>${s.success} / ${s.total}</td>
+                            <td style="font-weight:bold; color:${pct >= 50 ? '#2196F3' : '#718096'}">${pct}%</td>
+                        </tr>`;
+                    }
+                    html += `</table>`;
+                }
             }
 
             document.getElementById('stats-report-area').innerHTML = html;
@@ -734,8 +804,6 @@
             window.resetInputState();
         }
 
-        // ★【大手術・PDF内へ軌跡テニスコートを完全埋め込み】
-        // 何ゲーム目の何ポイント目かのテキストの「真下」へ、そのポイントの全打球が完全に描画されたミニコートを100%美しく出力します！
         window.generatePrintReport = function() {
             if (window.savedMatches.length === 0) { alert('まだポイントが登録されていないため、レポートを出力できません。'); return; }
             
@@ -781,7 +849,6 @@
                 if(log.shot === 'DF') shotText = 'ダブルフォルト';
                 else if(!log.shot.startsWith('フォロー') && !log.shot.startsWith('BT')) shotText = `${log.hand}・${log.shot}`;
 
-                // 各ポイントのテキストカード
                 html += `<div style="font-size:11px; padding:10px; background:#fcfcfc; border:1px solid #e2e8f0; border-radius:6px; margin-bottom:15px; page-break-inside: avoid;">`;
                 html += `<div style="display:flex; align-items:center; margin-bottom:6px;">`;
                 html += `<span style="font-weight:bold; color:#fff; background:#4a5568; padding:2px 6px; border-radius:4px; margin-right:8px; font-family:monospace; font-size:10px;">P.${log.pointNum}</span>`;
@@ -791,7 +858,6 @@
                 html += `<span style="color:#718096; font-size:10px; margin-left:auto;">(スコア: ${log.scoreState} / サーバー: ${srvName}・${log.serveType})</span>`;
                 html += `</div>`;
                 
-                // ★そのポイント独自のミニテニスコートを完全出力
                 let lineColor = log.result === '得点' ? '#2196F3' : '#f44336';
                 let courtHtml = `
                 <div style="position: relative; width: 220px; height: 310px; background-color: #3b7a57; border: 4px solid #2d5e43; border-radius: 4px; margin: 8px auto; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
@@ -817,11 +883,24 @@
                     log.trajectory.forEach((click, idx) => {
                         let bg = (idx === log.trajectory.length - 1) ? lineColor : '#fff';
                         let color = (idx === log.trajectory.length - 1) ? '#fff' : '#000';
-                        courtHtml += `<div style="position: absolute; width: 16px; height: 16px; background: ${bg}; color: ${color}; border: 1.5px solid #333; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 9px; left: ${click.x}px; top: ${click.y}px; transform: translate(-8px, -9px); z-index: 10;">${idx + 1}</div>`;
+                        
+                        let pdfDotLabel = idx + 1;
+                        if (idx === 0) pdfDotLabel = 'S';
+                        else if (idx === 1) pdfDotLabel = 'R';
+
+                        courtHtml += `<div style="position: absolute; width: 16px; height: 16px; background: ${bg}; color: ${color}; border: 1.5px solid #333; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 9px; left: ${click.x}px; top: ${click.y}px; transform: translate(-8px, -9px); z-index: 10;">${pdfDotLabel}</div>`;
                     });
                 } else {
                     courtHtml += `</svg><div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: rgba(255,255,255,0.6); font-size: 11px; font-weight: bold; white-space: nowrap;">(サーブエース/DFなどのため軌跡なし)</div>`;
                 }
+
+                if (log.posV) {
+                    courtHtml += `<div style="position: absolute; width: 16px; height: 16px; background: #9c27b0; color: #fff; border: 1.5px solid #333; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 9px; left: ${log.posV.x}px; top: ${log.posV.y}px; transform: translate(-8px, -9px); z-index: 11;">前</div>`;
+                }
+                if (log.posB) {
+                    courtHtml += `<div style="position: absolute; width: 16px; height: 16px; background: #e65100; color: #fff; border: 1.5px solid #333; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 9px; left: ${log.posB.x}px; top: ${log.posB.y}px; transform: translate(-8px, -9px); z-index: 11;">後</div>`;
+                }
+
                 courtHtml += `</div>`;
                 
                 html += courtHtml;
@@ -857,6 +936,8 @@
 
             if (window.editingIndex !== null) {
                 window.savedMatches[window.editingIndex].trajectory = [...window.clicks]; 
+                window.savedMatches[window.editingIndex].posV = window.posV ? {...window.posV} : null; 
+                window.savedMatches[window.editingIndex].posB = window.posB ? {...window.posB} : null; 
                 window.savedMatches[window.editingIndex].hand = window.modalSelectedHand;
                 window.savedMatches[window.editingIndex].result = window.modalSelectedResult;
                 window.savedMatches[window.editingIndex].missReason = (window.modalSelectedResult === '得点') ? '' : window.modalSelectedMissReason; 
@@ -921,6 +1002,8 @@
                     followPlayer: window.modalFollowPlayer, 
                     followBall: window.modalFollowBall,     
                     trajectory: [...window.clicks],
+                    posV: window.posV ? {...window.posV} : null, 
+                    posB: window.posB ? {...window.posB} : null, 
                     scoreState: currentScoreState
                 };
                 window.savedMatches.push(newLog);
@@ -972,6 +1055,9 @@
                 div.onclick = () => {
                     window.editingIndex = index; 
                     window.clicks = [...(log.trajectory || [])];
+                    window.posV = log.posV ? {...log.posV} : null; 
+                    window.posB = log.posB ? {...log.posB} : null; 
+                    
                     window.modalSelectedHand = log.hand || 'フォア';
                     window.modalSelectedResult = log.result || '得点';
                     window.modalSelectedMissReason = log.missReason || '単純ミス'; 
@@ -1047,12 +1133,6 @@
                 };
                 area.appendChild(div);
             });
-        };
-
-        window.changeWind = function(btn, type) {
-            if(window.isViewOnlyMode) return;
-            document.querySelectorAll('.windBtn').forEach(b => b.classList.remove('activeWind'));
-            btn.classList.add('activeWind');
         };
 
         window.undoPoint = function() {
@@ -1180,7 +1260,6 @@
             matchData.logs = window.savedMatches; localStorage.setItem(window.currentMatchStorageKey, JSON.stringify(matchData));
         };
 
-        // windowバインド（完全公開）
         window.handleCourtClick = handleCourtClick;
         window.startMatch = startMatch;
         window.selectPlayer = selectPlayer;
@@ -1198,6 +1277,8 @@
         window.goToHomeMenu = goToHomeMenu;
         window.closeEditPopup = closeEditPopup;
         window.generatePrintReport = generatePrintReport;
+        window.undoCourtClick = undoCourtClick;
+        window.clearCourtPos = clearCourtPos;
 
         window.renderSavedMatchesList();
     </script>
