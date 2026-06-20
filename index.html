@@ -522,7 +522,7 @@
             window.ptsA = 0; window.ptsB = 0; window.gamesA = 0; window.gamesB = 0;
             window.savedMatches = [];
             
-            // ★【古いデータ残りバグ修正】新しく試合を開始した際、前回の分析レポや得点履歴が残る現象を完全にリフレッシュ
+            // ★【古いデータ残り不具合修正】新規に別の試合を開始した際、前回のスタッツ表示や履歴一覧が画面に残る現象を完全にリフレッシュ
             const reportArea = document.getElementById('stats-report-area');
             if (reportArea) reportArea.innerHTML = '<p style="font-size:12px; color:#999; text-align:center; padding:10px; background:#f9f9f9; border-radius:4px;">ポイントを登録するとここに自動分析が出ます</p>';
             const histArea = document.getElementById('historyArea');
@@ -871,7 +871,7 @@
                 if (hasPData) {
                     html += `<h4 style="margin: 6px 0 2px 0; font-size: 11px; color: #2196F3; text-align:left;">■ ${pName} のショット詳細</h4>`;
                     html += `<table class="report-table">
-                        <tr><th>使ったショット群</th><th>成功 / 総数</th><th>ショット成功率</th></tr>`;
+                        <tr><th>使ったショット群</th><th>success / 総数</th><th>ショット成功率</th></tr>`;
                     for (let shotGroup in sMap) {
                         let s = sMap[shotGroup];
                         let pct = Math.round((s.success / s.total) * 100);
@@ -899,7 +899,7 @@
             window.resetInputState();
         }
 
-        // ★【見切れ＆対応不一致バグ完全修正版】PDF明細出力・印刷システム
+        // ★【軌跡の位置ズレ＆見切れバグ完全修正版】PDF明細出力・印刷システム
         window.generatePrintReport = function() {
             if (window.savedMatches.length === 0) { alert('まだポイントが登録されていないため、レポートを出力できません。'); return; }
             
@@ -964,9 +964,10 @@
                 
                 let lineColor = log.result === '得点' ? '#2196F3' : '#f44336';
                 
-                // 【軌跡・ドットのズレ＆見切れバグを完全に修正】
-                // 画面（アプリ）と完全に同一の縦横比・同一のボーダー幅（6px）を適用することで座標のズレを完璧に解決。
-                // 外枠に高さを固定保持するラッパーdiv（height:275px; overflow:visible）を設けることで下部・外側ドットの見切れを完全解消。
+                // 【軌跡・ドットのズレ＆見切れバグを完璧に修正】
+                // 画像（S__175915013.jpg）のように青い破線（line）だけが引き伸ばされてコートからズレていた不具合を解決するため、
+                // svg自体の属性として width="220" height="310"、さらにインラインスタイルでも幅・高さを固定指定しました。
+                // これにより、縮小表示（scale）を行っても、破線とドットが入力画面と100%寸分違わず完全に一致して描画されます。
                 let courtHtml = `
                 <div style="width:100%; height:275px; position:relative; overflow:visible; display:flex; justify-content:center; margin-top:4px;">
                     <div style="position: relative; width: 220px; height: 310px; background-color: #3b7a57; border: 6px solid #2d5e43; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transform: scale(0.85); transform-origin: top center; overflow: visible;">
@@ -980,7 +981,7 @@
                         <div style="position: absolute; background-color: white; bottom: 93px; left: 40px; right: 40px; height: 2px;"></div>
                         <div style="position: absolute; background-color: white; top: 93px; bottom: 93px; left: 50%; width: 2px; transform: translateX(-50%);"></div>
                         <div style="position: absolute; background-color: rgba(255,255,255,0.7); border-bottom: 2px dashed #333; height: 0; width: 100%; top: 50%;"></div>
-                        <svg style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible;">
+                        <svg width="220" height="310" style="position: absolute; top: 0; left: 0; width: 220px; height: 310px; pointer-events: none; overflow: visible;">
                 `;
                 
                 if (log.trajectory && log.trajectory.length > 0) {
@@ -997,7 +998,6 @@
                         if (idx === 0) pdfDotLabel = 'S';
                         else if (idx === 1) pdfDotLabel = 'R';
 
-                        // ドット直径も入力時と完全一致の18px、中心合わせのtranslate(-9px, -9px)を設定
                         courtHtml += `<div style="position: absolute; width: 18px; height: 18px; background: ${bg}; color: ${color}; border: 2px solid #333; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 10px; left: ${click.x}px; top: ${click.y}px; transform: translate(-9px, -9px); z-index: 10;">${pdfDotLabel}</div>`;
                     });
                 } else {
