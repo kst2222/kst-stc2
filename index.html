@@ -85,13 +85,13 @@
         .history-item.得点 { border-left-color: #2196F3; }
         .history-item.失点 { border-left-color: #f44336; }
 
-        #edit-popup, #print-popup { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 9999; }
+        #edit-popup { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 9999; }
         #popup-content-box { background: white; padding: 15px; border-radius: 8px; width: 100%; max-width: 360px; max-height: 90vh; overflow-y: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.3); position: relative; }
 
         /* 印刷・PDF保存用スタイル */
         @media print {
             body { background: white; padding: 0; margin: 0; }
-            #setup, #match, #edit-popup, #print-popup, button, .match-controls-row, .section-title, #main-court-parent, #main-controls-parent, .pos-option-area, #auth-screen {
+            #setup, #match, #edit-popup, button, .match-controls-row, .section-title, #main-court-parent, #main-controls-parent, .pos-option-area, #auth-screen {
                 display: none !important;
             }
             #print-report-area {
@@ -105,8 +105,8 @@
             .scoreboard th { background: #f0f0f0 !important; color: #000 !important; }
             .scoreboard td { border: 1px solid #000 !important; }
             .current-game { background: none !important; animation: none !important; color: #000 !important; }
-            
-            /* 縦向き・横向き混在制御用の印刷スタイル定義 */
+
+            /* 高度な縦横混在プリント設定（1枚目縦レポート、2枚目以降横向き3列詳細、ゲーム毎改ページ） */
             @page { size: portrait; margin: 10mm; }
             @page landscape-setting { size: landscape; margin: 8mm; }
             .portrait-page { page-break-after: always; display: block !important; width: 100% !important; }
@@ -169,7 +169,7 @@
         <div class="section-title" style="margin-top:0;">現在のゲームカウント（得点板）</div>
         <table class="scoreboard" id="scoreboard" style="margin-top: 5px;"></table>
 
-        <button id="printPdfBtn" type="button" style="background:#2196F3; font-size:14px; margin: 4px 0 12px 0; padding:12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);" onclick="window.openPrintPopup()">📋 この試合の全ポイント明細PDFを出力・保存</button>
+        <button id="printPdfBtn" type="button" style="background:#2196F3; font-size:14px; margin: 4px 0 12px 0; padding:12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);" onclick="window.generatePrintReport()">📋 この試合の全ポイント明細PDFを出力・保存</button>
 
         <div style="text-align:center; margin:5px 0;">
             <span id="final-game-indicator" class="final-badge hidden">ファイナルゲーム進行中 (7点先取)</span>
@@ -342,16 +342,6 @@
             <h3 id="popup-title" style="margin-top:0; font-size:14px; color:#9c27b0; text-align:center; border-bottom:2px solid #e8d5f5; padding-bottom:6px;">【履歴の確認・修正画面】</h3>
             <div id="popup-slot"></div>
             <button type="button" onclick="window.closeEditPopup()" style="background:#757575; margin-top:12px; font-size:13px; font-weight:bold; padding:10px; width:100%;">✕ キャンセルして閉じる</button>
-        </div>
-    </div>
-
-    <div id="print-popup" class="hidden">
-        <div id="popup-content-box" style="text-align: center;">
-            <h3 style="margin-top:0; font-size:14px; color:#2196F3; text-align:center; border-bottom:2px solid #edf2f7; padding-bottom:6px;">【PDF明細出力の選択】</h3>
-            <p style="font-size:11px; color:#555; text-align:left; margin:10px 0;">出力したいPDFのレイアウト形式を選択してください：</p>
-            <button type="button" onclick="window.printLayoutA()" style="background:#2196F3; font-size:12px; margin:4px 0; padding:10px; width:100%; white-space: normal; line-height: 1.3;">方式1: 1枚目縦レポ / 2枚目〜横3列詳細<br>(ゲーム毎新しいページからスタート)</button>
-            <button type="button" onclick="window.printLayoutB()" style="background:#4CAF50; font-size:12px; margin:4px 0; padding:10px; width:100%; white-space: normal; line-height: 1.3;">方式2: 1枚目縦レポ / 2枚目〜横5列詳細<br>(1ゲームを横1枚にきれいに収める)</button>
-            <button type="button" onclick="window.closePrintPopup()" style="background:#757575; margin-top:12px; font-size:12px; padding:8px; width:100%;">✕ キャンセル</button>
         </div>
     </div>
 
@@ -532,7 +522,7 @@
             window.ptsA = 0; window.ptsB = 0; window.gamesA = 0; window.gamesB = 0;
             window.savedMatches = [];
             
-            // ★【古いデータ残り不具合修正】新規に試合を開始した際、前回のスタッツ表示や履歴一覧を画面から完全に一掃リフレッシュ
+            // ★【古いデータ残りバグ修正】新しく試合を開始した際、前回の分析レポや得点履歴が残る現象を完全にリフレッシュ
             const reportArea = document.getElementById('stats-report-area');
             if (reportArea) reportArea.innerHTML = '<p style="font-size:12px; color:#999; text-align:center; padding:10px; background:#f9f9f9; border-radius:4px;">ポイントを登録するとここに自動分析が出ます</p>';
             const histArea = document.getElementById('historyArea');
@@ -909,18 +899,23 @@
             window.resetInputState();
         }
 
-        // 新設：レイアウト選択用ポップアップ開閉ロジック
-        window.openPrintPopup = function() {
+        // ★【見切れ＆対応不一致バグ完全修正版】PDF明細出力・印刷システム
+        window.generatePrintReport = function() {
             if (window.savedMatches.length === 0) { alert('まだポイントが登録されていないため、レポートを出力できません。'); return; }
-            document.getElementById('print-popup').classList.remove('hidden');
-        };
-        window.closePrintPopup = function() {
-            document.getElementById('print-popup').classList.add('hidden');
-        };
+            
+            const a1 = document.getElementById('A1').value || "高橋";
+            const a2 = document.getElementById('A2').value || "佐藤";
+            const b1 = document.getElementById('B1').value || "鈴木";
+            const b2 = document.getElementById('B2').value || "田中";
+            
+            let matchTitleName = "リアルタイム試合速報レポ";
+            if (window.currentMatchStorageKey) {
+                const matchedData = JSON.parse(localStorage.getItem(window.currentMatchStorageKey));
+                if (matchedData && matchedData.matchName) matchTitleName = matchedData.matchName;
+            }
 
-        // 新設共通処理：1枚目の「縦向き」レポートHTMLを構築する関数
-        window.getCommonPortraitReportHtml = function(matchTitleName) {
-            let html = `<div class="portrait-page" style="width:100%; box-sizing:border-box;">`;
+            // 1枚目：縦向き用セクション（得点板 ＋ 試合スタッツ分析）
+            let html = `<div class="portrait-page">`;
             html += `<h1 style="text-align:center; font-size:18px; margin:0 0 5px 0; color:#111;">${matchTitleName}</h1>`;
             html += `<p style="text-align:center; font-size:10px; color:#666; margin:0 0 15px 0;">出力日時: ${new Date().toLocaleString()}</p>`;
             html += `<h2 style="font-size:12px; border-bottom:2px solid #333; padding-bottom:2px; margin:15px 0 5px 0; color:#222;">▼ ゲームカウント（得点板）</h2>`;
@@ -928,173 +923,106 @@
             html += `<h2 style="font-size:12px; border-bottom:2px solid #333; padding-bottom:2px; margin:20px 0 5px 0; color:#222;">▼ 試合データ分析スタッツ</h2>`;
             html += `<div style="width:100%;">${document.getElementById('stats-report-area').innerHTML}</div>`;
             html += `</div>`;
-            return html;
-        };
-
-        // 新設共通処理：各ポイントの個別BOX（軌跡コートSVG・データ情報）を生成する関数（※見切れ不具合対応版）
-        window.generatePointBoxMarkup = function(log, a1, a2, b1, b2, columnsMode) {
-            let srvName = "未定";
-            if(log.server === 'A1') srvName = a1;
-            if(log.server === 'A2') srvName = a2;
-            if(log.server === 'B1') srvName = b1;
-            if(log.server === 'B2') srvName = b2;
-
-            let resText = log.result;
-            if (log.result !== '得点' && log.missReason) { resText = `${log.result}・${log.missReason}`; }
             
-            let shotText = log.shot;
-            if(log.shot === 'DF') shotText = 'ダブルフォルト';
-            else if(!log.shot.startsWith('フォロー') && !log.shot.startsWith('BT')) shotText = `${log.hand}・${log.shot}`;
-
-            // カウント並びモードに応じた各種CSS値の分岐
-            let boxWidth = (columnsMode === '3列') ? 'calc(33.33% - 8px)' : 'calc(20% - 5px)';
-            let minWidth = (columnsMode === '3列') ? 'auto' : '125px';
-            let fontSize = (columnsMode === '3列') ? '10px' : '9px';
-            let courtScale = (columnsMode === '3列') ? 0.82 : 0.60;
-            let courtAreaHeight = (columnsMode === '3列') ? '255px' : '186px';
-
-            // paddingの下部を12pxに厚く確保し、コート外のはみ出しドットを完全カード内に保護
-            let h = `<div style="width:${boxWidth}; min-width:${minWidth}; font-size:${fontSize}; padding:8px 6px 12px 6px; background:#fcfcfc; border:1px solid #e2e8f0; border-radius:6px; box-sizing:border-box; display:flex; flex-direction:column; align-items:center; page-break-inside:avoid;">`;
-            h += `<div style="width:100%; text-align:left; margin-bottom:5px; line-height:1.25;">`;
-            h += `<span style="font-weight:bold; color:#fff; background:#4a5568; padding:1px 3px; border-radius:2px; margin-right:3px; font-family:monospace; font-size:8px;">P.${log.pointNum}</span>`;
-            h += `<strong style="color:${log.result === '得点' ? '#2196F3' : '#f44336'};">[${resText}]</strong><br>`;
-            h += `<span style="font-weight:bold; color:#111; display:inline-block; max-width:100%; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">${log.player}</span>の${shotText}<br>`;
-            h += `<span style="color:#718096; font-size:8px;">(${log.scoreState} / サーバー:${srvName})</span>`;
-            h += `</div>`;
+            // 2枚目以降：横向き用3列配置セクション（ゲームが変わるごとに自動改ページ）
+            let currentG = 0;
+            let gameChunkHtml = "";
             
-            let lineColor = log.result === '得点' ? '#2196F3' : '#f44336';
-            // 【切れる現象の根本解決】親ラッパーを設置して高さを固定確保し、コート内部とSVGを overflow: visible に変更
-            let courtHtml = `
-            <div style="width: 100%; height: ${courtAreaHeight}; position: relative; overflow: visible; display: flex; justify-content: center; margin-top: 4px;">
-                <div style="position: relative; width: 220px; height: 310px; background-color: #3b7a57; border: 4px solid #2d5e43; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transform: scale(${courtScale}); transform-origin: top center; overflow: visible;">
-                    <div style="position: absolute; background-color: white; top: 0; width: 100%; height: 3px;"></div>
-                    <div style="position: absolute; background-color: white; bottom: 0; width: 100%; height: 3px;"></div>
-                    <div style="position: absolute; background-color: white; left: 20px; height: 100%; width: 3px;"></div>
-                    <div style="position: absolute; background-color: white; right: 20px; height: 100%; width: 3px;"></div>
-                    <div style="position: absolute; background-color: white; left: 40px; height: 100%; width: 2px;"></div>
-                    <div style="position: absolute; background-color: white; right: 40px; height: 100%; width: 2px;"></div>
-                    <div style="position: absolute; background-color: white; top: 93px; left: 40px; right: 40px; height: 2px;"></div>
-                    <div style="position: absolute; background-color: white; bottom: 93px; left: 40px; right: 40px; height: 2px;"></div>
-                    <div style="position: absolute; background-color: white; top: 93px; bottom: 93px; left: 50%; width: 2px; transform: translateX(-50%);"></div>
-                    <div style="position: absolute; background-color: rgba(255,255,255,0.7); border-bottom: 2px dashed #333; height: 0; width: 100%; top: 50%;"></div>
-                    <svg style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible;">
-            `;
-            
-            if (log.trajectory && log.trajectory.length > 0) {
-                for (let i = 0; i < log.trajectory.length - 1; i++) {
-                    courtHtml += `<line x1="${log.trajectory[i].x}" y1="${log.trajectory[i].y}" x2="${log.trajectory[i+1].x}" y2="${log.trajectory[i+1].y}" stroke="${lineColor}" stroke-width="2" stroke-dasharray="3" />`;
+            window.savedMatches.forEach((log) => {
+                if (log.gameNum !== currentG) {
+                    if (currentG !== 0) {
+                        html += gameChunkHtml + `</div></div>`;
+                    }
+                    currentG = log.gameNum;
+                    html += `<div class="landscape-page" style="width:100%; box-sizing:border-box;">`;
+                    html += `<h3 style="font-size:14px; background:#edf2f7; padding:6px 10px; margin:0 0 12px 0; border-left:4px solid #2196F3; color:#2d3748;">【第 ${currentG} ゲーム】</h3>`;
+                    html += `<div style="display:flex; flex-wrap:wrap; gap:12px; width:100%; box-sizing:border-box;">`;
+                    gameChunkHtml = "";
                 }
-                courtHtml += `</svg>`;
                 
-                log.trajectory.forEach((click, idx) => {
-                    let bg = (idx === log.trajectory.length - 1) ? lineColor : '#fff';
-                    let color = (idx === log.trajectory.length - 1) ? '#fff' : '#000';
+                let srvName = "未定";
+                if(log.server === 'A1') srvName = a1;
+                if(log.server === 'A2') srvName = a2;
+                if(log.server === 'B1') srvName = b1;
+                if(log.server === 'B2') srvName = b2;
+
+                let resText = log.result;
+                if (log.result !== '得点' && log.missReason) { resText = `${log.result}・${log.missReason}`; }
+                
+                let shotText = log.shot;
+                if(log.shot === 'DF') shotText = 'ダブルフォルト';
+                else if(!log.shot.startsWith('フォロー') && !log.shot.startsWith('BT')) shotText = `${log.hand}・${log.shot}`;
+
+                // 横3列用カード型コンテナ
+                let pointBoxHtml = `<div style="width:calc(33.33% - 8px); font-size:10px; padding:8px 6px 12px 6px; background:#fcfcfc; border:1px solid #e2e8f0; border-radius:6px; box-sizing:border-box; display:flex; flex-direction:column; align-items:center; page-break-inside:avoid;">`;
+                pointBoxHtml += `<div style="width:100%; text-align:left; margin-bottom:4px; line-height:1.3;">`;
+                pointBoxHtml += `<span style="font-weight:bold; color:#fff; background:#4a5568; padding:1px 4px; border-radius:3px; margin-right:4px; font-family:monospace; font-size:9px;">P.${log.pointNum}</span>`;
+                pointBoxHtml += `<strong style="color:${log.result === '得点' ? '#2196F3' : '#f44336'};">[${resText}]</strong><br>`;
+                pointBoxHtml += `<span style="font-weight:bold; color:#111;">${log.player}</span>の${shotText}<br>`;
+                pointBoxHtml += `<span style="color:#718096; font-size:9px;">(スコア: ${log.scoreState} / サーバー: ${srvName})</span>`;
+                pointBoxHtml += `</div>`;
+                
+                let lineColor = log.result === '得点' ? '#2196F3' : '#f44336';
+                
+                // 【軌跡・ドットのズレ＆見切れバグを完全に修正】
+                // 画面（アプリ）と完全に同一の縦横比・同一のボーダー幅（6px）を適用することで座標のズレを完璧に解決。
+                // 外枠に高さを固定保持するラッパーdiv（height:275px; overflow:visible）を設けることで下部・外側ドットの見切れを完全解消。
+                let courtHtml = `
+                <div style="width:100%; height:275px; position:relative; overflow:visible; display:flex; justify-content:center; margin-top:4px;">
+                    <div style="position: relative; width: 220px; height: 310px; background-color: #3b7a57; border: 6px solid #2d5e43; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transform: scale(0.85); transform-origin: top center; overflow: visible;">
+                        <div style="position: absolute; background-color: white; top: 0; width: 100%; height: 3px;"></div>
+                        <div style="position: absolute; background-color: white; bottom: 0; width: 100%; height: 3px;"></div>
+                        <div style="position: absolute; background-color: white; left: 20px; height: 100%; width: 3px;"></div>
+                        <div style="position: absolute; background-color: white; right: 20px; height: 100%; width: 3px;"></div>
+                        <div style="position: absolute; background-color: white; left: 40px; height: 100%; width: 2px;"></div>
+                        <div style="position: absolute; background-color: white; right: 40px; height: 100%; width: 2px;"></div>
+                        <div style="position: absolute; background-color: white; top: 93px; left: 40px; right: 40px; height: 2px;"></div>
+                        <div style="position: absolute; background-color: white; bottom: 93px; left: 40px; right: 40px; height: 2px;"></div>
+                        <div style="position: absolute; background-color: white; top: 93px; bottom: 93px; left: 50%; width: 2px; transform: translateX(-50%);"></div>
+                        <div style="position: absolute; background-color: rgba(255,255,255,0.7); border-bottom: 2px dashed #333; height: 0; width: 100%; top: 50%;"></div>
+                        <svg style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible;">
+                `;
+                
+                if (log.trajectory && log.trajectory.length > 0) {
+                    for (let i = 0; i < log.trajectory.length - 1; i++) {
+                        courtHtml += `<line x1="${log.trajectory[i].x}" y1="${log.trajectory[i].y}" x2="${log.trajectory[i+1].x}" y2="${log.trajectory[i+1].y}" stroke="${lineColor}" stroke-width="2" stroke-dasharray="3" />`;
+                    }
+                    courtHtml += `</svg>`;
                     
-                    let pdfDotLabel = idx + 1;
-                    if (idx === 0) pdfDotLabel = 'S';
-                    else if (idx === 1) pdfDotLabel = 'R';
+                    log.trajectory.forEach((click, idx) => {
+                        let bg = (idx === log.trajectory.length - 1) ? lineColor : '#fff';
+                        let color = (idx === log.trajectory.length - 1) ? '#fff' : '#000';
+                        
+                        let pdfDotLabel = idx + 1;
+                        if (idx === 0) pdfDotLabel = 'S';
+                        else if (idx === 1) pdfDotLabel = 'R';
 
-                    courtHtml += `<div style="position: absolute; width: 16px; height: 16px; background: ${bg}; color: ${color}; border: 1.5px solid #333; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 9px; left: ${click.x}px; top: ${click.y}px; transform: translate(-8px, -9px); z-index: 10;">${pdfDotLabel}</div>`;
-                });
-            } else {
-                courtHtml += `</svg><div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: rgba(255,255,255,0.6); font-size: 10px; font-weight: bold; white-space: nowrap;">(軌跡なし)</div>`;
-            }
-
-            if (log.posV) {
-                courtHtml += `<div style="position: absolute; width: 16px; height: 16px; background: #9c27b0; color: #fff; border: 1.5px solid #333; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 9px; left: ${log.posV.x}px; top: ${log.posV.y}px; transform: translate(-8px, -9px); z-index: 11;">前</div>`;
-            }
-            if (log.posB) {
-                courtHtml += `<div style="position: absolute; width: 16px; height: 16px; background: #e65100; color: #fff; border: 1.5px solid #333; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 9px; left: ${log.posB.x}px; top: ${log.posB.y}px; transform: translate(-8px, -9px); z-index: 11;">後</div>`;
-            }
-
-            courtHtml += `</div></div>`;
-            h += courtHtml + `</div>`;
-            return h;
-        };
-
-        // 新設：方式1出力処理 (1枚目縦レポート / 2枚目〜横3ポイント並び・ゲーム毎改ページ仕様)
-        window.printLayoutA = function() {
-            window.closePrintPopup();
-            const a1 = document.getElementById('A1').value || "高橋";
-            const a2 = document.getElementById('A2').value || "佐藤";
-            const b1 = document.getElementById('B1').value || "鈴木";
-            const b2 = document.getElementById('B2').value || "田中";
-            
-            let matchTitleName = "リアルタイム試合速報レポ";
-            if (window.currentMatchStorageKey) {
-                const matchedData = JSON.parse(localStorage.getItem(window.currentMatchStorageKey));
-                if (matchedData && matchedData.matchName) matchTitleName = matchedData.matchName;
-            }
-
-            let finalHtml = window.getCommonPortraitReportHtml(matchTitleName);
-            let currentG = 0;
-            let gameChunkHtml = "";
-
-            window.savedMatches.forEach((log) => {
-                if (log.gameNum !== currentG) {
-                    if (currentG !== 0) {
-                        finalHtml += gameChunkHtml + `</div></div>`;
-                    }
-                    currentG = log.gameNum;
-                    finalHtml += `<div class="landscape-page" style="width:100%; box-sizing:border-box;">`;
-                    finalHtml += `<h3 style="font-size:13px; background:#edf2f7; padding:5px 8px; margin:0 0 10px 0; border-left:4px solid #2196F3; color:#2d3748;">【第 ${currentG} ゲーム】</h3>`;
-                    finalHtml += `<div style="display:flex; flex-wrap:wrap; gap:10px; width:100%; box-sizing:border-box;">`;
-                    gameChunkHtml = "";
+                        // ドット直径も入力時と完全一致の18px、中心合わせのtranslate(-9px, -9px)を設定
+                        courtHtml += `<div style="position: absolute; width: 18px; height: 18px; background: ${bg}; color: ${color}; border: 2px solid #333; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 10px; left: ${click.x}px; top: ${click.y}px; transform: translate(-9px, -9px); z-index: 10;">${pdfDotLabel}</div>`;
+                    });
+                } else {
+                    courtHtml += `</svg><div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: rgba(255,255,255,0.6); font-size: 10px; font-weight: bold; white-space: nowrap;">(軌跡なし)</div>`;
                 }
-                gameChunkHtml += window.generatePointBoxMarkup(log, a1, a2, b1, b2, '3列');
-            });
 
-            if (currentG !== 0) {
-                finalHtml += gameChunkHtml + `</div></div>`;
-            }
-
-            document.getElementById('print-report-area').innerHTML = finalHtml;
-            window.print();
-        };
-
-        // 新設：方式2出力処理 (1枚目縦レポート / 2枚目〜横5ポイント並び・1ゲームをA4横1枚すっぽり収め仕様)
-        window.printLayoutB = function() {
-            window.closePrintPopup();
-            const a1 = document.getElementById('A1').value || "高橋";
-            const a2 = document.getElementById('A2').value || "佐藤";
-            const b1 = document.getElementById('B1').value || "鈴木";
-            const b2 = document.getElementById('B2').value || "田中";
-            
-            let matchTitleName = "リアルタイム試合速報レポ";
-            if (window.currentMatchStorageKey) {
-                const matchedData = JSON.parse(localStorage.getItem(window.currentMatchStorageKey));
-                if (matchedData && matchedData.matchName) matchTitleName = matchedData.matchName;
-            }
-
-            let finalHtml = window.getCommonPortraitReportHtml(matchTitleName);
-            let currentG = 0;
-            let gameChunkHtml = "";
-
-            window.savedMatches.forEach((log) => {
-                if (log.gameNum !== currentG) {
-                    if (currentG !== 0) {
-                        finalHtml += gameChunkHtml + `</div></div>`;
-                    }
-                    currentG = log.gameNum;
-                    finalHtml += `<div class="landscape-page" style="width:100%; box-sizing:border-box; page-break-inside:avoid;">`;
-                    finalHtml += `<h3 style="font-size:12px; background:#edf2f7; padding:4px 8px; margin:0 0 8px 0; border-left:4px solid #2196F3; color:#2d3748;">【第 ${currentG} ゲーム】（1枚収め構成）</h3>`;
-                    finalHtml += `<div style="display:flex; flex-wrap:wrap; gap:6px; width:100%; box-sizing:border-box;">`;
-                    gameChunkHtml = "";
+                if (log.posV) {
+                    courtHtml += `<div style="position: absolute; width: 18px; height: 18px; background: #9c27b0; color: #fff; border: 2px solid #333; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 10px; left: ${log.posV.x}px; top: ${log.posV.y}px; transform: translate(-9px, -9px); z-index: 11;">前</div>`;
                 }
-                gameChunkHtml += window.generatePointBoxMarkup(log, a1, a2, b1, b2, '5列');
+                if (log.posB) {
+                    courtHtml += `<div style="position: absolute; width: 18px; height: 18px; background: #e65100; color: #fff; border: 2px solid #333; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 10px; left: ${log.posB.x}px; top: ${log.posB.y}px; transform: translate(-9px, -9px); z-index: 11;">後</div>`;
+                }
+
+                courtHtml += `</div></div>`;
+                pointBoxHtml += courtHtml;
+                pointBoxHtml += `</div>`;
+                gameChunkHtml += pointBoxHtml;
             });
-
+            
             if (currentG !== 0) {
-                finalHtml += gameChunkHtml + `</div></div>`;
+                html += gameChunkHtml + `</div></div>`;
             }
-
-            document.getElementById('print-report-area').innerHTML = finalHtml;
+            
+            document.getElementById('print-report-area').innerHTML = html;
             window.print();
-        };
-
-        // 互換性担保のラッパー
-        window.generatePrintReport = function() {
-            window.openPrintPopup();
         };
 
         window.saveMatchPoint = function() {
@@ -1465,14 +1393,6 @@
         window.generatePrintReport = generatePrintReport;
         window.undoCourtClick = undoCourtClick;
         window.clearCourtPos = clearCourtPos;
-
-        // 【機能拡張分の外部エクスポート登録】
-        window.openPrintPopup = openPrintPopup;
-        window.closePrintPopup = closePrintPopup;
-        window.getCommonPortraitReportHtml = getCommonPortraitReportHtml;
-        window.generatePointBoxMarkup = generatePointBoxMarkup;
-        window.printLayoutA = printLayoutA;
-        window.printLayoutB = printLayoutB;
 
         // 【追加】認証の着火
         window.initDeviceAuthentication();
