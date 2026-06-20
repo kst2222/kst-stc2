@@ -965,12 +965,14 @@
                 let lineColor = log.result === '得点' ? '#2196F3' : '#f44336';
                 
                 // 【軌跡・ドットのズレ＆見切れバグを完璧に修正】
-                // 画像（S__175915013.jpg）のように青い破線（line）だけが引き伸ばされてコートからズレていた不具合を解決するため、
-                // svg自体の属性として width="220" height="310"、さらにインラインスタイルでも幅・高さを固定指定しました。
-                // これにより、縮小表示（scale）を行っても、破線とドットが入力画面と100%寸分違わず完全に一致して描画されます。
+                // iOS・iPadOS等のモバイル端末環境（WebKit）における変形原点バグを完全に回避するため、
+                // 中央配置（justify-content:center）＋ top center原点での拡大縮小を完全に廃止しました。
+                // 新方式では、あらかじめ縮小後の実寸値（187px×265px）で設計した固定コンテナ枠を margin: 4px auto で中央配置し、
+                // その内部の基準左上（position:absolute; left:0; top:0;）から transform-origin: top left; で100%正確に縮小します。
+                // これにより、SVG内の青い破線（軌跡）や数字ドット、前後ピン位置すべてが入力を施した通りの正確な位置に固定追従します。
                 let courtHtml = `
-                <div style="width:100%; height:275px; position:relative; overflow:visible; display:flex; justify-content:center; margin-top:4px;">
-                    <div style="position: relative; width: 220px; height: 310px; background-color: #3b7a57; border: 6px solid #2d5e43; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transform: scale(0.85); transform-origin: top center; overflow: visible;">
+                <div style="width:187px; height:265px; position:relative; overflow:visible; margin:4px auto;">
+                    <div style="position: absolute; left:0; top:0; width: 220px; height: 310px; background-color: #3b7a57; border: 6px solid #2d5e43; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transform: scale(0.85); transform-origin: top left; overflow: visible;">
                         <div style="position: absolute; background-color: white; top: 0; width: 100%; height: 3px;"></div>
                         <div style="position: absolute; background-color: white; bottom: 0; width: 100%; height: 3px;"></div>
                         <div style="position: absolute; background-color: white; left: 20px; height: 100%; width: 3px;"></div>
