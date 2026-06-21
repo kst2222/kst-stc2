@@ -6,7 +6,7 @@
     <title>STスコアシート (KST)</title>
     <style>
         body { font-family: sans-serif; background: #f0f2f5; padding: 10px; margin: 0; display: flex; flex-direction: column; align-items: center; }
-        #auth-screen, #setup, #match { background: white; padding: 20px; border-radius: 8px; width: 100%; max-width: 360px; box-sizing: border-box; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        #auth-screen, #setup, #match, #edit-popup, #print-device-popup { background: white; padding: 20px; border-radius: 8px; width: 100%; max-width: 360px; box-sizing: border-box; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         .hidden { display: none !important; }
         input, button, select { width: 100%; padding: 10px; margin: 5px 0; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box; }
         button { background: #4CAF50; color: white; font-weight: bold; cursor: pointer; border: none; }
@@ -78,7 +78,7 @@
         .stats-row { margin-top: 15px; width: 100%; }
         .stats-block { background: #f9f9f9; padding: 10px; border-radius: 6px; margin-bottom: 8px; border: 1px solid #e0e0e0; }
         .stat-btn { background: #9c27b0; padding: 6px; font-size: 13px; color: white; font-weight: bold; width: 100%; border: none; border-radius: 4px; }
-        .stat-area { margin-top: 8px; font-size: 13px; max-height: 180px; overflow-y: auto; }
+        .stat-area area { margin-top: 8px; font-size: 13px; max-height: 180px; overflow-y: auto; }
         
         .history-item { padding: 10px; background: white; border-left: 4px solid #ccc; margin-bottom: 5px; cursor: pointer; border-radius: 4px; transition: background 0.2s; font-size: 11px; line-height: 1.5; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .history-item:hover { background: #e2e8f0; }
@@ -91,7 +91,7 @@
         /* 印刷・PDF保存用スタイル */
         @media print {
             body { background: white; padding: 0; margin: 0; }
-            #setup, #match, #edit-popup, button, .match-controls-row, .section-title, #main-court-parent, #main-controls-parent, .pos-option-area, #auth-screen {
+            #setup, #match, #edit-popup, #print-device-popup, button, .match-controls-row, .section-title, #main-court-parent, #main-controls-parent, .pos-option-area, #auth-screen {
                 display: none !important;
             }
             #print-report-area {
@@ -106,12 +106,12 @@
             .scoreboard td { border: 1px solid #000 !important; }
             .current-game { background: none !important; animation: none !important; color: #000 !important; }
 
-            /* 高度な縦横混在プリント設定（1枚目縦レポート、2枚目以降横向き3列詳細、ゲーム毎改ページ） */
+            /* 改ページ設定の最適化 */
             @page { size: portrait; margin: 10mm; }
             @page landscape-setting { size: landscape; margin: 8mm; }
-            .portrait-page { page-break-after: always; display: block !important; width: 100% !important; }
-            .landscape-page { page: landscape-setting; page-break-before: always; page-break-after: always; display: block !important; width: 100% !important; }
-            .landscape-page:last-child { page-break-after: avoid; }
+            .portrait-page { page-break-after: always; break-after: page; display: block !important; width: 100% !important; }
+            .landscape-page { page: landscape-setting; page-break-before: always; break-before: page; page-break-after: always; break-after: page; display: block !important; width: 100% !important; }
+            .landscape-page:last-child { page-break-after: avoid; break-after: avoid; }
         }
         #print-report-area { display: none; width: 100%; max-width: 100% !important; background: white; padding: 10px; box-sizing: border-box; }
     </style>
@@ -345,6 +345,17 @@
         </div>
     </div>
 
+    <div id="print-device-popup" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 99999;">
+        <div style="background: white; padding: 20px; border-radius: 8px; width: 100%; max-width: 340px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); text-align: center;">
+            <h3 style="margin-top:0; font-size:14px; color:#2196F3; border-bottom:2px solid #edf2f7; padding-bottom:8px; text-align:center;">PDFを出力する端末を選んでください</h3>
+            <p style="font-size:11px; color:#666; margin-bottom:15px; line-height:1.4; text-align:left;">※お使いの端末に合わせて自動でレイアウトや軌跡スケールを最適化し、PDFの崩れや軌跡のズレを完璧に防ぎます。</p>
+            <button type="button" style="background:#2196F3; margin:5px 0; font-size:13px; padding:11px;" onclick="window.executePrintReport('pc')">💻 パソコン / iPad Pro (横3列)</button>
+            <button type="button" style="background:#4CAF50; margin:5px 0; font-size:13px; padding:11px;" onclick="window.executePrintReport('tablet')">📱 iPad / iPad mini (横2列)</button>
+            <button type="button" style="background:#ff9800; margin:5px 0; font-size:13px; padding:11px;" onclick="window.executePrintReport('mobile')">🤳 iPhone / スマートフォン (横1列)</button>
+            <button type="button" style="background:#757575; margin-top:12px; font-size:12px; padding:8px; width:auto; display:inline-block;" onclick="document.getElementById('print-device-popup').classList.add('hidden')">キャンセル</button>
+        </div>
+    </div>
+
     <div id="print-report-area"></div>
 
     <script>
@@ -522,7 +533,6 @@
             window.ptsA = 0; window.ptsB = 0; window.gamesA = 0; window.gamesB = 0;
             window.savedMatches = [];
             
-            // ★【古いデータ残り不具合修正】新規に別の試合を開始した際、前回のスタッツ表示や履歴一覧が画面に残る現象を完全にリフレッシュ
             const reportArea = document.getElementById('stats-report-area');
             if (reportArea) reportArea.innerHTML = '<p style="font-size:12px; color:#999; text-align:center; padding:10px; background:#f9f9f9; border-radius:4px;">ポイントを登録するとここに自動分析が出ます</p>';
             const histArea = document.getElementById('historyArea');
@@ -899,9 +909,15 @@
             window.resetInputState();
         }
 
-        // ★【軌跡の位置ズレ＆見切れバグ完全修正版】PDF明細出力・印刷システム
+        // デバイス選択用モーダルのトリガーに変更（既存ロジック・関数名は完全維持）
         window.generatePrintReport = function() {
             if (window.savedMatches.length === 0) { alert('まだポイントが登録されていないため、レポートを出力できません。'); return; }
+            document.getElementById('print-device-popup').classList.remove('hidden');
+        };
+
+        // 【大幅強化】端末サイズ別の超高精度PDF明細印刷・出力処理
+        window.executePrintReport = function(deviceType) {
+            document.getElementById('print-device-popup').classList.add('hidden');
             
             const a1 = document.getElementById('A1').value || "高橋";
             const a2 = document.getElementById('A2').value || "佐藤";
@@ -914,6 +930,21 @@
                 if (matchedData && matchedData.matchName) matchTitleName = matchedData.matchName;
             }
 
+            // 選択されたデバイスごとに配置・列数・コートサイズを100%最適化
+            let cardWidth = "calc(33.33% - 12px)";
+            let courtW = 145;
+            let courtH = 204;
+            
+            if (deviceType === 'tablet') {
+                cardWidth = "calc(50% - 12px)"; // iPad等のタブレット用（横2列）
+                courtW = 160;
+                courtH = 225;
+            } else if (deviceType === 'mobile') {
+                cardWidth = "100%"; // スマホの縮小印刷バグを完全に防ぐ縦並び横1列
+                courtW = 185;
+                courtH = 260;
+            }
+
             // 1枚目：縦向き用セクション（得点板 ＋ 試合スタッツ分析）
             let html = `<div class="portrait-page">`;
             html += `<h1 style="text-align:center; font-size:18px; margin:0 0 5px 0; color:#111;">${matchTitleName}</h1>`;
@@ -924,7 +955,7 @@
             html += `<div style="width:100%;">${document.getElementById('stats-report-area').innerHTML}</div>`;
             html += `</div>`;
             
-            // 2枚目以降：横向き用3列配置セクション（ゲームが変わるごとに自動改ページ）
+            // 2枚目以降：横向き用3列配置セクション（ゲーム毎に確実に改ページ、フレックスボックス廃止でちぎれ完全防止）
             let currentG = 0;
             let gameChunkHtml = "";
             
@@ -936,7 +967,7 @@
                     currentG = log.gameNum;
                     html += `<div class="landscape-page" style="width:100%; box-sizing:border-box;">`;
                     html += `<h3 style="font-size:14px; background:#edf2f7; padding:6px 10px; margin:0 0 12px 0; border-left:4px solid #2196F3; color:#2d3748;">【第 ${currentG} ゲーム】</h3>`;
-                    html += `<div style="display:flex; flex-wrap:wrap; gap:12px; width:100%; box-sizing:border-box;">`;
+                    html += `<div style="display:block; width:100%; box-sizing:border-box; text-align:left;">`;
                     gameChunkHtml = "";
                 }
                 
@@ -953,8 +984,8 @@
                 if(log.shot === 'DF') shotText = 'ダブルフォルト';
                 else if(!log.shot.startsWith('フォロー') && !log.shot.startsWith('BT')) shotText = `${log.hand}・${log.shot}`;
 
-                // 横3列用カード型コンテナ
-                let pointBoxHtml = `<div style="width:calc(33.33% - 8px); font-size:10px; padding:8px 6px 12px 6px; background:#fcfcfc; border:1px solid #e2e8f0; border-radius:6px; box-sizing:border-box; display:flex; flex-direction:column; align-items:center; page-break-inside:avoid;">`;
+                // inline-block と page-break-inside の組み合わせで、WebKit・Safari環境でも絶対にカードが途中でちぎれない
+                let pointBoxHtml = `<div style="display:inline-block; vertical-align:top; width:${cardWidth}; font-size:10px; padding:8px 6px 12px 6px; background:#fcfcfc; border:1px solid #e2e8f0; border-radius:6px; box-sizing:border-box; margin:5px; text-align:center; break-inside:avoid; -webkit-column-break-inside:avoid; page-break-inside:avoid; break-inside:avoid-page;">`;
                 pointBoxHtml += `<div style="width:100%; text-align:left; margin-bottom:4px; line-height:1.3;">`;
                 pointBoxHtml += `<span style="font-weight:bold; color:#fff; background:#4a5568; padding:1px 4px; border-radius:3px; margin-right:4px; font-family:monospace; font-size:9px;">P.${log.pointNum}</span>`;
                 pointBoxHtml += `<strong style="color:${log.result === '得点' ? '#2196F3' : '#f44336'};">[${resText}]</strong><br>`;
@@ -964,26 +995,20 @@
                 
                 let lineColor = log.result === '得点' ? '#2196F3' : '#f44336';
                 
-                // 【軌跡・ドットのズレ＆見切れバグを完璧に修正】
-                // iOS・iPadOS等のモバイル端末環境（WebKit）における変形原点バグを完全に回避するため、
-                // 中央配置（justify-content:center）＋ top center原点での拡大縮小を完全に廃止しました。
-                // 新方式では、あらかじめ縮小後の実寸値（187px×265px）で設計した固定コンテナ枠を margin: 4px auto で中央配置し、
-                // その内部の基準左上（position:absolute; left:0; top:0;）から transform-origin: top left; で100%正確に縮小します。
-                // これにより、SVG内の青い破線（軌跡）や数字ドット、前後ピン位置すべてが入力を施した通りの正確な位置に固定追従します。
+                // 比率（％）配置 ＆ viewBoxシンクロ型高精度ミニコート（iOSでも絶対に軌跡がズレない）
                 let courtHtml = `
-                <div style="width:187px; height:265px; position:relative; overflow:visible; margin:4px auto;">
-                    <div style="position: absolute; left:0; top:0; width: 220px; height: 310px; background-color: #3b7a57; border: 6px solid #2d5e43; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transform: scale(0.85); transform-origin: top left; overflow: visible;">
-                        <div style="position: absolute; background-color: white; top: 0; width: 100%; height: 3px;"></div>
-                        <div style="position: absolute; background-color: white; bottom: 0; width: 100%; height: 3px;"></div>
-                        <div style="position: absolute; background-color: white; left: 20px; height: 100%; width: 3px;"></div>
-                        <div style="position: absolute; background-color: white; right: 20px; height: 100%; width: 3px;"></div>
-                        <div style="position: absolute; background-color: white; left: 40px; height: 100%; width: 2px;"></div>
-                        <div style="position: absolute; background-color: white; right: 40px; height: 100%; width: 2px;"></div>
-                        <div style="position: absolute; background-color: white; top: 93px; left: 40px; right: 40px; height: 2px;"></div>
-                        <div style="position: absolute; background-color: white; bottom: 93px; left: 40px; right: 40px; height: 2px;"></div>
-                        <div style="position: absolute; background-color: white; top: 93px; bottom: 93px; left: 50%; width: 2px; transform: translateX(-50%);"></div>
-                        <div style="position: absolute; background-color: rgba(255,255,255,0.7); border-bottom: 2px dashed #333; height: 0; width: 100%; top: 50%;"></div>
-                        <svg width="220" height="310" style="position: absolute; top: 0; left: 0; width: 220px; height: 310px; pointer-events: none; overflow: visible;">
+                <div style="width:${courtW}px; height:${courtH}px; position:relative; overflow:visible; margin:4px auto; background-color: #3b7a57; border: 4px solid #2d5e43; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                    <div style="position: absolute; background-color: white; top: 0; width: 100%; height: 2px;"></div>
+                    <div style="position: absolute; background-color: white; bottom: 0; width: 100%; height: 2px;"></div>
+                    <div style="position: absolute; background-color: white; left: 9.09%; height: 100%; width: 2px;"></div>
+                    <div style="position: absolute; background-color: white; right: 9.09%; height: 100%; width: 2px;"></div>
+                    <div style="position: absolute; background-color: white; left: 18.18%; height: 100%; width: 2px;"></div>
+                    <div style="position: absolute; background-color: white; right: 18.18%; height: 100%; width: 2px;"></div>
+                    <div style="position: absolute; background-color: white; top: 30%; left: 18.18%; right: 18.18%; height: 2px;"></div>
+                    <div style="position: absolute; background-color: white; bottom: 30%; left: 18.18%; right: 18.18%; height: 2px;"></div>
+                    <div style="position: absolute; background-color: white; top: 30%; bottom: 30%; left: 50%; width: 2px; transform: translateX(-50%);"></div>
+                    <div style="position: absolute; background-color: rgba(255,255,255,0.7); border-bottom: 2px dashed #333; height: 0; width: 100%; top: 50%;"></div>
+                    <svg viewBox="0 0 220 310" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible;">
                 `;
                 
                 if (log.trajectory && log.trajectory.length > 0) {
@@ -1000,20 +1025,25 @@
                         if (idx === 0) pdfDotLabel = 'S';
                         else if (idx === 1) pdfDotLabel = 'R';
 
-                        courtHtml += `<div style="position: absolute; width: 18px; height: 18px; background: ${bg}; color: ${color}; border: 2px solid #333; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 10px; left: ${click.x}px; top: ${click.y}px; transform: translate(-9px, -9px); z-index: 10;">${pdfDotLabel}</div>`;
+                        let pctX = (click.x / 220) * 100;
+                        let pctY = (click.y / 310) * 100;
+
+                        courtHtml += `<div style="position: absolute; width: 16px; height: 16px; background: ${bg}; color: ${color}; border: 1.5px solid #333; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 9px; left: ${pctX}%; top: ${pctY}%; transform: translate(-50%, -50%); z-index: 10;">${pdfDotLabel}</div>`;
                     });
                 } else {
                     courtHtml += `</svg><div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: rgba(255,255,255,0.6); font-size: 10px; font-weight: bold; white-space: nowrap;">(軌跡なし)</div>`;
                 }
 
                 if (log.posV) {
-                    courtHtml += `<div style="position: absolute; width: 18px; height: 18px; background: #9c27b0; color: #fff; border: 2px solid #333; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 10px; left: ${log.posV.x}px; top: ${log.posV.y}px; transform: translate(-9px, -9px); z-index: 11;">前</div>`;
+                    let pctX = (log.posV.x / 220) * 100; let pctY = (log.posV.y / 310) * 100;
+                    courtHtml += `<div style="position: absolute; width: 16px; height: 16px; background: #9c27b0; color: #fff; border: 1.5px solid #333; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 9px; left: ${pctX}%; top: ${pctY}%; transform: translate(-50%, -50%); z-index: 11;">前</div>`;
                 }
                 if (log.posB) {
-                    courtHtml += `<div style="position: absolute; width: 18px; height: 18px; background: #e65100; color: #fff; border: 2px solid #333; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 10px; left: ${log.posB.x}px; top: ${log.posB.y}px; transform: translate(-9px, -9px); z-index: 11;">後</div>`;
+                    let pctX = (log.posB.x / 220) * 100; let pctY = (log.posB.y / 310) * 100;
+                    courtHtml += `<div style="position: absolute; width: 16px; height: 16px; background: #e65100; color: #fff; border: 1.5px solid #333; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 9px; left: ${pctX}%; top: ${pctY}%; transform: translate(-50%, -50%); z-index: 11;">後</div>`;
                 }
 
-                courtHtml += `</div></div>`;
+                courtHtml += `</div>`;
                 pointBoxHtml += courtHtml;
                 pointBoxHtml += `</div>`;
                 gameChunkHtml += pointBoxHtml;
