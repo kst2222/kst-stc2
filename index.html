@@ -33,6 +33,8 @@
         .net { position: absolute; background-color: rgba(255,255,255,0.7); border-bottom: 2px dashed #333; height: 0; width: 100%; top: 50%; }
         .base-top { top: 0; width: 100%; height: 3px; }
         .base-bottom { bottom: 0; width: 100%; height: 3px; }
+        
+        /* テニスコートの図の崩れ（タイポ）を完全に修正 */
         .side-left { left: 20px; height: 100%; width: 3px; }
         .side-right { right: 20px; height: 100%; width: 3px; }
         .single-left { left: 40px; height: 100%; width: 2px; }
@@ -78,7 +80,7 @@
         .stats-row { margin-top: 15px; width: 100%; }
         .stats-block { background: #f9f9f9; padding: 10px; border-radius: 6px; margin-bottom: 8px; border: 1px solid #e0e0e0; }
         .stat-btn { background: #9c27b0; padding: 6px; font-size: 13px; color: white; font-weight: bold; width: 100%; border: none; border-radius: 4px; }
-        .stat-area area { margin-top: 8px; font-size: 13px; max-height: 180px; overflow-y: auto; }
+        .stat-area { margin-top: 8px; font-size: 13px; max-height: 180px; overflow-y: auto; }
         
         .history-item { padding: 10px; background: white; border-left: 4px solid #ccc; margin-bottom: 5px; cursor: pointer; border-radius: 4px; transition: background 0.2s; font-size: 11px; line-height: 1.5; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .history-item:hover { background: #e2e8f0; }
@@ -88,8 +90,18 @@
         #edit-popup { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 9999; }
         #popup-content-box { background: white; padding: 15px; border-radius: 8px; width: 100%; max-width: 360px; max-height: 90vh; overflow-y: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.3); position: relative; }
 
+        .match-list-item { display: flex; align-items: center; justify-content: space-between; background: #f9f9f9; padding: 8px; border: 1px solid #e0e0e0; border-radius: 4px; margin-bottom: 5px; font-size: 12px; }
+        .match-list-item span { flex: 1; cursor: pointer; }
+        .match-list-item button { width: auto; margin: 0 2px; padding: 5px 8px; font-size: 11px; }
+        .match-list-item .delete-btn { background: #f44336; }
+        .match-list-item .rename-btn { background: #2196F3; }
+
         /* 印刷・PDF保存用スタイル */
         @media print {
+            /* PDF出力時のカラーと背景グラフィックを全要素で強制適用 */
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            
+            @page { margin: 0; } /* ブラウザ標準のURL・タイトルヘッダーフッターを完全に非表示 */
             body { background: white; padding: 0; margin: 0; }
             #setup, #match, #edit-popup, #print-device-popup, button, .match-controls-row, .section-title, #main-court-parent, #main-controls-parent, .pos-option-area, #auth-screen {
                 display: none !important;
@@ -97,6 +109,8 @@
             #print-report-area {
                 display: block !important;
                 width: 100% !important;
+                padding: 12mm; /* URLフッターの代わりに中身自体に余白を設定 */
+                box-sizing: border-box;
             }
             .report-table { border: 1px solid #000 !important; box-shadow: none !important; width: 100% !important; margin-bottom: 15px !important; }
             .report-table th { background: #f0f0f0 !important; color: #000 !important; padding: 5px !important; }
@@ -107,10 +121,9 @@
             .current-game { background: none !important; animation: none !important; color: #000 !important; }
 
             /* 改ページ設定の最適化 */
-            @page { size: portrait; margin: 10mm; }
-            @page landscape-setting { size: landscape; margin: 8mm; }
-            .portrait-page { page-break-after: always; break-after: page; display: block !important; width: 100% !important; }
-            .landscape-page { page: landscape-setting; page-break-before: always; break-before: page; page-break-after: always; break-after: page; display: block !important; width: 100% !important; }
+            .portrait-page { display: block !important; width: 100% !important; page-break-after: always; break-after: page; padding-bottom: 10mm; }
+            .landscape-page { page: landscape-setting; display: block !important; width: 100% !important; page-break-before: always; break-before: page; page-break-after: always; break-after: page; padding-bottom: 10mm; }
+            @page landscape-setting { size: landscape; margin: 0; }
             .landscape-page:last-child { page-break-after: avoid; break-after: avoid; }
         }
         #print-report-area { display: none; width: 100%; max-width: 100% !important; background: white; padding: 10px; box-sizing: border-box; }
@@ -146,6 +159,7 @@
         <input id="B2" value="田中" placeholder="前衛の名前">
         <br><br>
         ゲーム数
+        <label><input type="radio" name="games" value="1">1(ファイナルのみ)</label>
         <label><input type="radio" name="games" value="3">3</label>
         <label><input type="radio" name="games" value="5" checked>5</label>
         <label><input type="radio" name="games" value="7">7</label>
@@ -155,6 +169,23 @@
         <label><input type="radio" name="serve" value="A" checked>味方</label>
         <label><input type="radio" name="serve" value="B">対戦相手</label>
         <br><br>
+        
+        <div style="background:#edf2f7; padding:10px; border-radius:6px; margin:10px 0; border:1px solid #cbd5e0;">
+            <h4 style="margin:0 0 5px 0; font-size:11px; color:#2b6cb0;">⏱ 試合の途中カウントから開始する（任意）</h4>
+            <div style="display:flex; gap:10px; font-size:11px; align-items:center;">
+                <span>ゲーム数:</span>
+                <input type="number" id="init-gA" value="0" min="0" style="width:50px; padding:4px; margin:0; text-align:center;">
+                <span>-</span>
+                <input type="number" id="init-gB" value="0" min="0" style="width:50px; padding:4px; margin:0; text-align:center;">
+            </div>
+            <div style="display:flex; gap:10px; font-size:11px; align-items:center; margin-top:5px;">
+                <span>ポイント:</span>
+                <input type="number" id="init-pA" value="0" min="0" style="width:50px; padding:4px; margin:0; text-align:center;">
+                <span>-</span>
+                <input type="number" id="init-pB" value="0" min="0" style="width:50px; padding:4px; margin:0; text-align:center;">
+            </div>
+        </div>
+
         <button onclick="window.startMatch()">試合開始</button>
 
         <div class="saved-matches-box">
@@ -168,6 +199,30 @@
 
         <div class="section-title" style="margin-top:0;">現在のゲームカウント（得点板）</div>
         <table class="scoreboard" id="scoreboard" style="margin-top: 5px;"></table>
+
+        <div style="margin: 4px 0 10px 0; text-align:center; width:100%;">
+            <button type="button" style="background:#757575; font-size:11px; padding:6px 12px; width:auto; display:inline-block;" onclick="document.getElementById('live-change-panel').classList.toggle('hidden')">⚙️ 選手名・ゲーム数を途中で変更する</button>
+            <div id="live-change-panel" class="hidden" style="background:#fff; border:1px solid #cbd5e0; padding:10px; border-radius:6px; margin-top:6px; text-align:left; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);">
+                <div style="font-size:11px; font-weight:bold; color:#4a5568; margin-bottom:2px;">味方ペア名変更:</div>
+                <div style="display:flex; gap:4px; margin-bottom:6px;">
+                    <input type="text" id="match-change-A1" style="padding:4px; font-size:11px; margin:0;" oninput="window.handleLiveNameChange()">
+                    <input type="text" id="match-change-A2" style="padding:4px; font-size:11px; margin:0;" oninput="window.handleLiveNameChange()">
+                </div>
+                <div style="font-size:11px; font-weight:bold; color:#4a5568; margin-bottom:2px;">対戦相手ペア名変更:</div>
+                <div style="display:flex; gap:4px; margin-bottom:6px;">
+                    <input type="text" id="match-change-B1" style="padding:4px; font-size:11px; margin:0;" oninput="window.handleLiveNameChange()">
+                    <input type="text" id="match-change-B2" style="padding:4px; font-size:11px; margin:0;" oninput="window.handleLiveNameChange()">
+                </div>
+                <div style="font-size:11px; font-weight:bold; color:#4a5568; margin-bottom:2px;">マッチゲーム数変更:</div>
+                <select id="match-change-limit" style="padding:4px; font-size:11px; margin:0; width:100%;" onchange="window.handleLiveLimitChange()">
+                    <option value="1">1 (ファイナルのみ)</option>
+                    <option value="3">3ゲームマッチ</option>
+                    <option value="5">5ゲームマッチ</option>
+                    <option value="7">7ゲームマッチ</option>
+                    <option value="9">9ゲームマッチ</option>
+                </select>
+            </div>
+        </div>
 
         <button id="printPdfBtn" type="button" style="background:#2196F3; font-size:14px; margin: 4px 0 12px 0; padding:12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);" onclick="window.generatePrintReport()">📋 この試合の全ポイント明細PDFを出力・保存</button>
 
@@ -313,7 +368,23 @@
                     </div>
                 </div>
 
+                <div class="section-title">❹ ポイントごとのカスタムメモ（任意）</div>
+                <div class="selector-row" style="background:#f7fafc; padding:6px; border-radius:4px; border:1px solid #e2e8f0; margin-bottom:8px;">
+                    <input type="text" id="point-comment-input" placeholder="例: 相手前衛のレシーブミスを誘った" style="flex:1; margin:0; padding:6px; font-size:11px;">
+                    <label style="font-size:11px; font-weight:bold; width:auto; color:#4a5568; display:flex; align-items:center; gap:2px; cursor:pointer; margin-left:4px;">
+                        <input type="checkbox" id="point-star-checkbox" style="width:auto; margin:0;">⭐重要
+                    </label>
+                </div>
+
                 <button id="submitPointBtn" type="button" onclick="window.saveMatchPoint()">★ このポイントを確定して登録</button>
+
+                <div id="skip-points-zone" style="margin-top: 10px; padding: 8px; background: #e2e8f0; border-radius: 6px; border: 1px solid #cbd5e0; text-align: center;">
+                    <div style="font-size: 11px; font-weight: bold; color: #4a5568; margin-bottom: 5px;">⏱ 見逃し時・スコアのみクイック追加</div>
+                    <div style="display: flex; gap: 6px;">
+                        <button type="button" style="background: #2196F3; font-size: 11px; padding: 8px 4px; margin: 0;" onclick="window.skipPointAndAddScore('A')">味方に1点追加 (スキップ)</button>
+                        <button type="button" style="background: #f44336; font-size: 11px; padding: 8px 4px; margin: 0;" onclick="window.skipPointAndAddScore('B')">相手に1点追加 (スキップ)</button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -359,9 +430,8 @@
     <div id="print-report-area"></div>
 
     <script>
-        // 【新規追加】鉄壁のデバイスアクティベーション認証システム
+        // 【完全にそのまま維持】デバイスアクティベーション認証システム
         window.initDeviceAuthentication = function() {
-            // ローカルストレージにデバイス固有のランダム文字列を発行・永続保存
             if (!localStorage.getItem('KST_DEVICE_ID')) {
                 let seed = Math.random().toString(36).substring(2, 8).toUpperCase();
                 localStorage.setItem('KST_DEVICE_ID', 'KST-' + seed);
@@ -369,25 +439,21 @@
             let deviceId = localStorage.getItem('KST_DEVICE_ID');
             document.getElementById('label-device-id').innerText = deviceId;
 
-            // すでに過去に認証済みの端末ならそのままスルーして起動
             if (localStorage.getItem('KST_AUTH_PASSED') === 'OK_TRUE_2026') {
                 document.getElementById('auth-screen').classList.add('hidden');
                 document.getElementById('setup').classList.remove('hidden');
                 window.renderSavedMatchesList();
             } else {
-                // 未認証ならゲートを開く
                 document.getElementById('auth-screen').classList.remove('hidden');
                 document.getElementById('setup').classList.add('hidden');
             }
         };
 
-        // 解除キーの判定（他人に使い回せない端末独自の計算）
         window.submitAuthKey = function() {
             let userKey = document.getElementById('input-auth-key').value.trim().toUpperCase();
-            let deviceId = localStorage.getItem('KST_DEVICE_ID'); // 例: KST-A1B2C3
-            let rawCore = deviceId.replace('KST-', ''); // A1B2C3
+            let deviceId = localStorage.getItem('KST_DEVICE_ID');
+            let rawCore = deviceId.replace('KST-', '');
 
-            // 裏コマンド：もし office@kst.kyoto さん自身がその場でキーを発行したい場合
             if (userKey === 'KST-MASTER-OFFICE') {
                 document.getElementById('admin-generator-box').classList.remove('hidden');
                 document.getElementById('input-auth-key').value = '';
@@ -395,7 +461,6 @@
                 return;
             }
 
-            // アルゴリズム：IDの英数字を反転させて、末尾に「99」をくっつけたものを唯一無二の正規キーとする
             let validKey = rawCore.split('').reverse().join('') + '99';
 
             if (userKey === validKey) {
@@ -409,7 +474,6 @@
             }
         };
 
-        // 【管理者用】相手のデバイスIDから、そのスマホ専用の解除キーを自動算出する機能
         window.generateKeyFromAdmin = function() {
             let targetId = document.getElementById('input-admin-target-id').value.trim().toUpperCase();
             if (!targetId.startsWith('KST-') || targetId.length < 5) {
@@ -421,12 +485,19 @@
             document.getElementById('admin-result-key').innerText = "生成キー: " + calculatedKey;
         };
 
+        // 基本スコア変数
         window.ptsA = 0;          
         window.ptsB = 0;          
         window.gamesA = 0;        
         window.gamesB = 0;        
         window.matchLimit = 5;    
         window.gameScores = [];  
+
+        // 途中開始用の初期スコア保持変数
+        window.initGamesA = 0;
+        window.initGamesB = 0;
+        window.initPtsA = 0;
+        window.initPtsB = 0;
 
         window.currentSelectedPlayer = null; 
         window.currentSelectedShot = null;   
@@ -450,6 +521,15 @@
         window.isViewOnlyMode = false; 
         window.isMatchOver = false; 
         window.currentMatchStorageKey = null;
+
+        // 動的な選手ペア名変換用の便利関数
+        window.getPlayerNameById = function(playerIdent) {
+            if (playerIdent === 'A1') return (document.getElementById('A1').value || "高橋") + "(味方後)";
+            if (playerIdent === 'A2') return (document.getElementById('A2').value || "佐藤") + "(味方前)";
+            if (playerIdent === 'B1') return (document.getElementById('B1').value || "鈴木") + "(相手後)";
+            if (playerIdent === 'B2') return (document.getElementById('B2').value || "田中") + "(相手前)";
+            return "誰か";
+        };
 
         window.setPosMode = function(mode) {
             if (window.isViewOnlyMode && window.editingIndex === null) return;
@@ -526,11 +606,39 @@
             document.getElementById('btn-fplayer-b2').innerText = b2;
         };
 
+        window.handleLiveNameChange = function() {
+            document.getElementById('A1').value = document.getElementById('match-change-A1').value;
+            document.getElementById('A2').value = document.getElementById('match-change-A2').value;
+            document.getElementById('B1').value = document.getElementById('match-change-B1').value;
+            document.getElementById('B2').value = document.getElementById('match-change-B2').value;
+            window.syncAllPlayerNames();
+            window.renderScoreboard();
+            window.renderHistory();
+            window.calculateStats();
+            if(window.currentMatchStorageKey) { window.updateCurrentStoredMatch(); }
+        };
+
+        window.handleLiveLimitChange = function() {
+            window.matchLimit = parseInt(document.getElementById('match-change-limit').value);
+            window.rebuildScoreFromLogs();
+            window.calculateStats();
+            if(window.currentMatchStorageKey) { window.updateCurrentStoredMatch(); }
+        };
+
         window.startMatch = function() {
             window.isViewOnlyMode = false;
             window.isMatchOver = false;
             window.gameScores = [];
-            window.ptsA = 0; window.ptsB = 0; window.gamesA = 0; window.gamesB = 0;
+            
+            window.initGamesA = parseInt(document.getElementById('init-gA').value) || 0;
+            window.initGamesB = parseInt(document.getElementById('init-gB').value) || 0;
+            window.initPtsA = parseInt(document.getElementById('init-pA').value) || 0;
+            window.initPtsB = parseInt(document.getElementById('init-pB').value) || 0;
+
+            window.ptsA = window.initPtsA; 
+            window.ptsB = window.initPtsB; 
+            window.gamesA = window.initGamesA; 
+            window.gamesB = window.initGamesB;
             window.savedMatches = [];
             
             const reportArea = document.getElementById('stats-report-area');
@@ -547,6 +655,12 @@
 
             window.syncAllPlayerNames();
 
+            document.getElementById('match-change-A1').value = document.getElementById('A1').value;
+            document.getElementById('match-change-A2').value = document.getElementById('A2').value;
+            document.getElementById('match-change-B1').value = document.getElementById('B1').value;
+            document.getElementById('match-change-B2').value = document.getElementById('B2').value;
+            document.getElementById('match-change-limit').value = window.matchLimit;
+
             document.getElementById('setup').classList.add('hidden');
             document.getElementById('match').classList.remove('hidden');
             document.getElementById('input-controls-area').classList.remove('hidden');
@@ -555,12 +669,14 @@
             document.getElementById('finishMatchBtn').classList.remove('hidden');
             document.getElementById('backToMenuBtn').classList.add('hidden');
             document.getElementById('view-mode-banner').classList.add('hidden');
+            document.getElementById('live-change-panel').classList.add('hidden');
             
             window.resetInputState();
-            window.renderScoreboard(); 
+            window.rebuildScoreFromLogs(); 
         };
 
         window.isFinalGameActive = function() {
+            if (window.matchLimit === 1) return true; 
             const threshold = Math.floor(window.matchLimit / 2);
             return (window.gamesA === threshold && window.gamesB === threshold);
         };
@@ -585,10 +701,12 @@
                 let idx = i - 1;
                 if (idx < window.gameScores.length) {
                     let score = window.gameScores[idx];
-                    let classA = score.a > score.b ? 'class="win-score"' : '';
-                    let classB = score.b > score.a ? 'class="win-score"' : '';
-                    tdA += `<td ${classA}>${score.a}</td>`;
-                    tdB += `<td ${classB}>${score.b}</td>`;
+                    let displayA = score.a === '-' ? '-' : score.a;
+                    let displayB = score.b === '-' ? '-' : score.b;
+                    let classA = (typeof score.a === 'number' && score.a > score.b) ? 'class="win-score"' : '';
+                    let classB = (typeof score.b === 'number' && score.b > score.a) ? 'class="win-score"' : '';
+                    tdA += `<td ${classA}>${displayA}</td>`;
+                    tdB += `<td ${classB}>${displayB}</td>`;
                 } 
                 else if (idx === window.gameScores.length && !window.isMatchOver) {
                     tdA += `<td class="current-game">${window.ptsA}</td>`;
@@ -791,6 +909,9 @@
             window.modalFollowBall = 'レシーブ(1st)'; 
             window.modalSelectedMissReason = '単純ミス';
 
+            document.getElementById('point-comment-input').value = '';
+            document.getElementById('point-star-checkbox').checked = false;
+
             document.querySelectorAll('.playerBtn').forEach(b => b.classList.remove('active-player'));
             document.querySelectorAll('.shotBtn').forEach(b => b.classList.remove('active-shot'));
             document.getElementById('selected-player-label').innerText = "未選択";
@@ -807,16 +928,11 @@
         };
 
         window.calculateStats = function() {
-            const a1Name = document.getElementById('A1').value || "高橋";
-            const a2Name = document.getElementById('A2').value || "佐藤";
-            const b1Name = document.getElementById('B1').value || "鈴木";
-            const b2Name = document.getElementById('B2').value || "田中";
-
             let players = {
-                'A1': { name: a1Name, s1st: 0, s2ndTotal: 0, df: 0, win: 0, lose: 0 },
-                'A2': { name: a2Name, s1st: 0, s2ndTotal: 0, df: 0, win: 0, lose: 0 },
-                'B1': { name: b1Name, s1st: 0, s2ndTotal: 0, df: 0, win: 0, lose: 0 },
-                'B2': { name: b2Name, s1st: 0, s2ndTotal: 0, df: 0, win: 0, lose: 0 }
+                'A1': { name: document.getElementById('A1').value || "高橋", s1st: 0, s2ndTotal: 0, df: 0, win: 0, lose: 0 },
+                'A2': { name: document.getElementById('A2').value || "佐藤", s1st: 0, s2ndTotal: 0, df: 0, win: 0, lose: 0 },
+                'B1': { name: document.getElementById('B1').value || "鈴木", s1st: 0, s2ndTotal: 0, df: 0, win: 0, lose: 0 },
+                'B2': { name: document.getElementById('B2').value || "田中", s1st: 0, s2ndTotal: 0, df: 0, win: 0, lose: 0 }
             };
 
             let playerShotsMap = { 'A1': {}, 'A2': {}, 'B1': {}, 'B2': {} };
@@ -909,20 +1025,13 @@
             window.resetInputState();
         }
 
-        // デバイス選択用モーダルのトリガーに変更（既存ロジック・関数名は完全維持）
         window.generatePrintReport = function() {
             if (window.savedMatches.length === 0) { alert('まだポイントが登録されていないため、レポートを出力できません。'); return; }
             document.getElementById('print-device-popup').classList.remove('hidden');
         };
 
-        // 【大幅強化】端末サイズ別の超高精度PDF明細印刷・出力処理
         window.executePrintReport = function(deviceType) {
             document.getElementById('print-device-popup').classList.add('hidden');
-            
-            const a1 = document.getElementById('A1').value || "高橋";
-            const a2 = document.getElementById('A2').value || "佐藤";
-            const b1 = document.getElementById('B1').value || "鈴木";
-            const b2 = document.getElementById('B2').value || "田中";
             
             let matchTitleName = "リアルタイム試合速報レポ";
             if (window.currentMatchStorageKey) {
@@ -930,22 +1039,13 @@
                 if (matchedData && matchedData.matchName) matchTitleName = matchedData.matchName;
             }
 
-            // 選択されたデバイスごとに配置・列数・コートサイズを100%最適化
             let cardWidth = "calc(33.33% - 12px)";
-            let courtW = 145;
-            let courtH = 204;
-            
             if (deviceType === 'tablet') {
-                cardWidth = "calc(50% - 12px)"; // iPad等のタブレット用（横2列）
-                courtW = 160;
-                courtH = 225;
+                cardWidth = "calc(50% - 12px)"; 
             } else if (deviceType === 'mobile') {
-                cardWidth = "100%"; // スマホの縮小印刷バグを完全に防ぐ縦並び横1列
-                courtW = 185;
-                courtH = 260;
+                cardWidth = "100%"; 
             }
 
-            // 1枚目：縦向き用セクション（得点板 ＋ 試合スタッツ分析）
             let html = `<div class="portrait-page">`;
             html += `<h1 style="text-align:center; font-size:18px; margin:0 0 5px 0; color:#111;">${matchTitleName}</h1>`;
             html += `<p style="text-align:center; font-size:10px; color:#666; margin:0 0 15px 0;">出力日時: ${new Date().toLocaleString()}</p>`;
@@ -955,7 +1055,6 @@
             html += `<div style="width:100%;">${document.getElementById('stats-report-area').innerHTML}</div>`;
             html += `</div>`;
             
-            // 2枚目以降：横向き用3列配置セクション（ゲーム毎に確実に改ページ、フレックスボックス廃止でちぎれ完全防止）
             let currentG = 0;
             let gameChunkHtml = "";
             
@@ -967,47 +1066,47 @@
                     currentG = log.gameNum;
                     html += `<div class="landscape-page" style="width:100%; box-sizing:border-box;">`;
                     html += `<h3 style="font-size:14px; background:#edf2f7; padding:6px 10px; margin:0 0 12px 0; border-left:4px solid #2196F3; color:#2d3748;">【第 ${currentG} ゲーム】</h3>`;
-                    html += `<div style="display:block; width:100%; box-sizing:border-box; text-align:left;">`;
+                    html += `<div style="block; width:100%; box-sizing:border-box; text-align:left;">`;
                     gameChunkHtml = "";
                 }
                 
-                let srvName = "未定";
-                if(log.server === 'A1') srvName = a1;
-                if(log.server === 'A2') srvName = a2;
-                if(log.server === 'B1') srvName = b1;
-                if(log.server === 'B2') srvName = b2;
+                let srvName = window.getPlayerNameById(log.server).replace(/\(味方.\)|\(相手.\)/, '');
+                if (log.shot === 'スキップ入力') srvName = '不明(スキップ)';
 
                 let resText = log.result;
                 if (log.result !== '得点' && log.missReason) { resText = `${log.result}・${log.missReason}`; }
                 
                 let shotText = log.shot;
                 if(log.shot === 'DF') shotText = 'ダブルフォルト';
-                else if(!log.shot.startsWith('フォロー') && !log.shot.startsWith('BT')) shotText = `${log.hand}・${log.shot}`;
+                else if(log.shot !== 'スキップ入力' && !log.shot.startsWith('フォロー') && !log.shot.startsWith('BT')) shotText = `${log.hand}・${log.shot}`;
 
-                // inline-block と page-break-inside の組み合わせで、WebKit・Safari環境でも絶対にカードが途中でちぎれない
-                let pointBoxHtml = `<div style="display:inline-block; vertical-align:top; width:${cardWidth}; font-size:10px; padding:8px 6px 12px 6px; background:#fcfcfc; border:1px solid #e2e8f0; border-radius:6px; box-sizing:border-box; margin:5px; text-align:center; break-inside:avoid; -webkit-column-break-inside:avoid; page-break-inside:avoid; break-inside:avoid-page;">`;
+                let importantMark = log.isImportant ? `<span style="color:#ff9800; font-weight:bold; font-size:12px; margin-left:4px;">★重要</span>` : '';
+                let commentTextHtml = log.comment ? `<div style="color:#e65100; font-size:9px; margin-top:4px; padding-top:4px; border-top:1px dashed #cbd5e0; font-style:italic; line-height:1.2;">💬 ${log.comment}</div>` : '';
+
+                let pointBoxHtml = `<div style="display:inline-block; vertical-align:top; width:${cardWidth}; font-size:10px; padding:8px 6px 12px 6px; background:#fcfcfc; border:1px solid #e2e8f0; border-radius:6px; box-sizing:border-box; margin:5px; text-align:center; page-break-inside:avoid; break-inside:avoid-page;">`;
                 pointBoxHtml += `<div style="width:100%; text-align:left; margin-bottom:4px; line-height:1.3;">`;
                 pointBoxHtml += `<span style="font-weight:bold; color:#fff; background:#4a5568; padding:1px 4px; border-radius:3px; margin-right:4px; font-family:monospace; font-size:9px;">P.${log.pointNum}</span>`;
-                pointBoxHtml += `<strong style="color:${log.result === '得点' ? '#2196F3' : '#f44336'};">[${resText}]</strong><br>`;
-                pointBoxHtml += `<span style="font-weight:bold; color:#111;">${log.player}</span>の${shotText}<br>`;
+                pointBoxHtml += `<strong style="color:${log.result === '得点' ? '#2196F3' : '#f44336'};">[${resText}]</strong>${importantMark}<br>`;
+                pointBoxHtml += `<span style="font-weight:bold; color:#111;">${log.shot === 'スキップ入力' ? log.player : window.getPlayerNameById(log.playerIdent)}</span>の${shotText}<br>`;
                 pointBoxHtml += `<span style="color:#718096; font-size:9px;">(スコア: ${log.scoreState} / サーバー: ${srvName})</span>`;
+                pointBoxHtml += commentTextHtml; 
                 pointBoxHtml += `</div>`;
                 
                 let lineColor = log.result === '得点' ? '#2196F3' : '#f44336';
                 
-                // 比率（％）配置 ＆ viewBoxシンクロ型高精度ミニコート（iOSでも絶対に軌跡がズレない）
+                // 完全バグ修正：PDF印刷時でも背景色と白線を強制維持、縦線の解釈ズレ（はみ出し）を完全に防ぐ絶対配置設定
                 let courtHtml = `
-                <div style="width:${courtW}px; height:${courtH}px; position:relative; overflow:visible; margin:4px auto; background-color: #3b7a57; border: 4px solid #2d5e43; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
-                    <div style="position: absolute; background-color: white; top: 0; width: 100%; height: 2px;"></div>
-                    <div style="position: absolute; background-color: white; bottom: 0; width: 100%; height: 2px;"></div>
-                    <div style="position: absolute; background-color: white; left: 9.09%; height: 100%; width: 2px;"></div>
-                    <div style="position: absolute; background-color: white; right: 9.09%; height: 100%; width: 2px;"></div>
-                    <div style="position: absolute; background-color: white; left: 18.18%; height: 100%; width: 2px;"></div>
-                    <div style="position: absolute; background-color: white; right: 18.18%; height: 100%; width: 2px;"></div>
-                    <div style="position: absolute; background-color: white; top: 30%; left: 18.18%; right: 18.18%; height: 2px;"></div>
-                    <div style="position: absolute; background-color: white; bottom: 30%; left: 18.18%; right: 18.18%; height: 2px;"></div>
-                    <div style="position: absolute; background-color: white; top: 30%; bottom: 30%; left: 50%; width: 2px; transform: translateX(-50%);"></div>
-                    <div style="position: absolute; background-color: rgba(255,255,255,0.7); border-bottom: 2px dashed #333; height: 0; width: 100%; top: 50%;"></div>
+                <div style="width:220px; height:310px; position:relative; overflow:visible; margin:4px auto; background-color: #3b7a57; border: 6px solid #2d5e43; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); box-sizing: content-box; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                    <div style="position: absolute; background-color: white; top: 0; width: 100%; height: 3px;"></div>
+                    <div style="position: absolute; background-color: white; bottom: 0; width: 100%; height: 3px;"></div>
+                    <div style="position: absolute; background-color: white; left: 20px; top: 0; bottom: 0; width: 3px;"></div>
+                    <div style="position: absolute; background-color: white; right: 20px; top: 0; bottom: 0; width: 3px;"></div>
+                    <div style="position: absolute; background-color: white; left: 40px; top: 0; bottom: 0; width: 2px;"></div>
+                    <div style="position: absolute; background-color: white; right: 40px; top: 0; bottom: 0; width: 2px;"></div>
+                    <div style="position: absolute; background-color: white; top: 93px; left: 40px; right: 40px; height: 2px;"></div>
+                    <div style="position: absolute; background-color: white; bottom: 93px; left: 40px; right: 40px; height: 2px;"></div>
+                    <div style="position: absolute; background-color: white; top: 93px; bottom: 93px; left: 50%; width: 2px; transform: translateX(-50%);"></div>
+                    <div style="position: absolute; border-bottom: 2px dashed #333; height: 0; width: 100%; top: 50%;"></div>
                     <svg viewBox="0 0 220 310" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible;">
                 `;
                 
@@ -1025,22 +1124,17 @@
                         if (idx === 0) pdfDotLabel = 'S';
                         else if (idx === 1) pdfDotLabel = 'R';
 
-                        let pctX = (click.x / 220) * 100;
-                        let pctY = (click.y / 310) * 100;
-
-                        courtHtml += `<div style="position: absolute; width: 16px; height: 16px; background: ${bg}; color: ${color}; border: 1.5px solid #333; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 9px; left: ${pctX}%; top: ${pctY}%; transform: translate(-50%, -50%); z-index: 10;">${pdfDotLabel}</div>`;
+                        courtHtml += `<div style="position: absolute; width: 18px; height: 18px; background: ${bg}; color: ${color}; border: 2px solid #333; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 10px; left: ${click.x}px; top: ${click.y}px; transform: translate(-50%, -50%); z-index: 10;">${pdfDotLabel}</div>`;
                     });
                 } else {
                     courtHtml += `</svg><div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: rgba(255,255,255,0.6); font-size: 10px; font-weight: bold; white-space: nowrap;">(軌跡なし)</div>`;
                 }
 
                 if (log.posV) {
-                    let pctX = (log.posV.x / 220) * 100; let pctY = (log.posV.y / 310) * 100;
-                    courtHtml += `<div style="position: absolute; width: 16px; height: 16px; background: #9c27b0; color: #fff; border: 1.5px solid #333; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 9px; left: ${pctX}%; top: ${pctY}%; transform: translate(-50%, -50%); z-index: 11;">前</div>`;
+                    courtHtml += `<div style="position: absolute; width: 18px; height: 18px; background: #9c27b0; color: #fff; border: 2px solid #333; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 10px; left: ${log.posV.x}px; top: ${log.posV.y}px; transform: translate(-50%, -50%); z-index: 11;">前</div>`;
                 }
                 if (log.posB) {
-                    let pctX = (log.posB.x / 220) * 100; let pctY = (log.posB.y / 310) * 100;
-                    courtHtml += `<div style="position: absolute; width: 16px; height: 16px; background: #e65100; color: #fff; border: 1.5px solid #333; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 9px; left: ${pctX}%; top: ${pctY}%; transform: translate(-50%, -50%); z-index: 11;">後</div>`;
+                    courtHtml += `<div style="position: absolute; width: 18px; height: 18px; background: #e65100; color: #fff; border: 2px solid #333; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 10px; left: ${log.posB.x}px; top: ${log.posB.y}px; transform: translate(-50%, -50%); z-index: 11;">後</div>`;
                 }
 
                 courtHtml += `</div>`;
@@ -1061,24 +1155,19 @@
             if (!window.currentSelectedPlayer) { alert('❶ 選手を選択してください。'); return; }
             if (!window.currentSelectedShot) { alert('❷ ショット（群）を選択してください。'); return; }
 
-            let pName = "誰か";
-            if(window.currentSelectedPlayer === 'A1') pName = (document.getElementById('A1').value || "高橋") + "(味方後)";
-            if(window.currentSelectedPlayer === 'A2') pName = (document.getElementById('A2').value || "佐藤") + "(味方前)";
-            if(window.currentSelectedPlayer === 'B1') pName = (document.getElementById('B1').value || "鈴木") + "(相手後)";
-            if(window.currentSelectedPlayer === 'B2') pName = (document.getElementById('B2').value || "田中") + "(相手前)";
+            let pName = window.getPlayerNameById(window.currentSelectedPlayer);
 
             let finalShotName = window.currentSelectedShot;
             if (window.currentSelectedShot === 'フォロー' || window.currentSelectedShot === 'BT') {
-                let fromName = "誰か";
-                if(window.modalFollowPlayer === 'A1') fromName = document.getElementById('A1').value || "味方後";
-                if(window.modalFollowPlayer === 'A2') fromName = document.getElementById('A2').value || "味方前";
-                if(window.modalFollowPlayer === 'B1') fromName = document.getElementById('B1').value || "相手後";
-                if(window.modalFollowPlayer === 'B2') fromName = document.getElementById('B2').value || "相手前";
+                let fromName = window.getPlayerNameById(window.modalFollowPlayer).replace(/\(味方.\)|\(相手.\)/, '');
                 finalShotName = `${window.currentSelectedShot}(起:${fromName}の${window.modalFollowBall})`;
             }
 
             let calculated_game_num = window.gamesA + window.gamesB + 1;
             let calculated_point_num = window.ptsA + window.ptsB + 1;
+
+            const currentComment = document.getElementById('point-comment-input').value.trim();
+            const currentStar = document.getElementById('point-star-checkbox').checked;
 
             if (window.editingIndex !== null) {
                 window.savedMatches[window.editingIndex].trajectory = [...window.clicks]; 
@@ -1093,6 +1182,9 @@
                 window.savedMatches[window.editingIndex].player = pName;
                 window.savedMatches[window.editingIndex].shot = finalShotName;
                 
+                window.savedMatches[window.editingIndex].comment = currentComment;
+                window.savedMatches[window.editingIndex].isImportant = currentStar;
+
                 if(window.currentSelectedShot === 'フォロー' || window.currentSelectedShot === 'BT') {
                     window.savedMatches[window.editingIndex].followPlayer = window.modalFollowPlayer;
                     window.savedMatches[window.editingIndex].followBall = window.modalFollowBall;
@@ -1150,7 +1242,9 @@
                     trajectory: [...window.clicks],
                     posV: window.posV ? {...window.posV} : null, 
                     posB: window.posB ? {...window.posB} : null, 
-                    scoreState: currentScoreState
+                    scoreState: currentScoreState,
+                    comment: currentComment,        
+                    isImportant: currentStar        
                 };
                 window.savedMatches.push(newLog);
 
@@ -1163,6 +1257,76 @@
             window.renderScoreboard();
             window.renderHistory();
             window.calculateStats(); 
+            if(window.currentMatchStorageKey) { window.updateCurrentStoredMatch(); }
+        };
+
+        // 新設：見逃し用クイックスキップ処理システム（既存構造に完全適合）
+        window.skipPointAndAddScore = function(targetSide) {
+            if (window.isViewOnlyMode) return;
+            if (window.isMatchOver) { alert('試合は既に終了しています。'); return; }
+
+            let calculated_game_num = window.gamesA + window.gamesB + 1;
+            let calculated_point_num = window.ptsA + window.ptsB + 1;
+            let currentScoreState = `${window.gamesA}-${window.gamesB} (${window.ptsA}-${window.ptsB})`;
+
+            let pName = '';
+            if (targetSide === 'A') {
+                pName = '味方得点 (スキップ)';
+                window.ptsA++;
+            } else {
+                pName = '相手得点 (スキップ)';
+                window.ptsB++;
+            }
+
+            let targetPoints = window.isFinalGameActive() ? 7 : 4;
+            let gameEnded = false;
+            let gameWinner = '';
+
+            if(window.ptsA >= targetPoints && (window.ptsA - window.ptsB) >= 2) {
+                window.gamesA++; window.gameScores.push({a: window.ptsA, b: window.ptsB}); gameWinner = '味方ペア'; gameEnded = true;
+            } else if(window.ptsB >= targetPoints && (window.ptsB - window.ptsA) >= 2) {
+                window.gamesB++; window.gameScores.push({a: window.ptsA, b: window.ptsB}); gameWinner = '相手ペア'; gameEnded = true;
+            }
+
+            if(gameEnded) {
+                window.ptsA = 0; window.ptsB = 0; 
+                alert(`${gameWinner}がゲームを獲得しました！`);
+            }
+
+            let gamesToWin = Math.ceil(window.matchLimit / 2); 
+            if(window.gamesA >= gamesToWin) { alert('試合終了！おめでとうございます！'); window.isMatchOver = true; } 
+            else if(window.gamesB >= gamesToWin) { alert('試合終了！対戦相手の勝利です。'); window.isMatchOver = true; }
+
+            const newLog = {
+                gameNum: calculated_game_num,     
+                pointNum: calculated_point_num,   
+                playerIdent: '', 
+                player: pName, 
+                shot: 'スキップ入力', 
+                hand: '',
+                result: '得点',
+                missReason: '', 
+                server: '', 
+                serveType: '', 
+                followPlayer: '', 
+                followBall: '',      
+                trajectory: [],
+                posV: null, 
+                posB: null, 
+                scoreState: currentScoreState,
+                comment: '見逃しによるスコアのみクイック登録',        
+                isImportant: false        
+            };
+            window.savedMatches.push(newLog);
+
+            if(window.isMatchOver) {
+                document.getElementById('shotButtons')?.classList.add('hidden');
+            }
+            window.resetInputState(); 
+            window.renderScoreboard();
+            window.renderHistory();
+            window.calculateStats(); 
+            if(window.currentMatchStorageKey) { window.updateCurrentStoredMatch(); }
         };
 
         window.renderHistory = function() {
@@ -1171,11 +1335,8 @@
             area.innerHTML = '';
 
             window.savedMatches.forEach((log, index) => {
-                let srvName = "未定";
-                if(log.server === 'A1') srvName = document.getElementById('A1').value || "味方後";
-                if(log.server === 'A2') srvName = document.getElementById('A2').value || "味方前";
-                if(log.server === 'B1') srvName = document.getElementById('B1').value || "相手後";
-                if(log.server === 'B2') srvName = document.getElementById('B2').value || "相手前";
+                let srvName = window.getPlayerNameById(log.server);
+                if (log.shot === 'スキップ入力') srvName = '不明(スキップ)';
 
                 let resText = log.result;
                 if (log.result !== '得点' && log.missReason) { resText = `${log.result}・${log.missReason}`; }
@@ -1185,17 +1346,22 @@
                 
                 let shotText = log.shot;
                 if(log.shot === 'DF') shotText = 'ダブルフォルト';
-                else if(!log.shot.startsWith('フォロー') && !log.shot.startsWith('BT')) shotText = `${log.hand}・${log.shot}`;
+                else if(log.shot !== 'スキップ入力' && !log.shot.startsWith('フォロー') && !log.shot.startsWith('BT')) shotText = `${log.hand}・${log.shot}`;
+
+                let importantStar = log.isImportant ? `<span style="color:#ff9800; font-weight:bold; margin-right:4px;">⭐</span>` : '';
+                let commentRow = log.comment ? `<div style="color:#e65100; font-size:10px; padding-left:34px; font-style:italic; margin-top:2px;">💬 メモ: ${log.comment}</div>` : '';
 
                 div.innerHTML = `
                     <div style="display:flex; align-items:center; margin-bottom:4px;">
                         <span style="font-weight:bold; background:#444; color:#fff; padding:2px 6px; border-radius:4px; margin-right:8px; font-family:monospace; font-size:10px;">#${index + 1}</span>
+                        ${importantStar}
                         <strong style="color:${log.result === '得点' ? '#2196F3' : '#f44336'}; margin-right:6px;">[${resText}]</strong>
-                        <span style="color:#333; font-weight:bold;">${log.player} の ${shotText}</span>
+                        <span style="color:#333; font-weight:bold;">${log.shot === 'スキップ入力' ? log.player : window.getPlayerNameById(log.playerIdent) + ' の ' + shotText}</span>
                     </div>
                     <div style="color:#666; font-size:10px; padding-left:34px; line-height:1.3;">
-                        ➡ 試合スコア: <span style="color:#000; font-weight:bold;">${log.scoreState}</span> (${srvName}ペアの${log.serveType || '1st'}発より)
+                        ➡ 試合スコア: <span style="color:#000; font-weight:bold;">${log.scoreState}</span> ${log.shot === 'スキップ入力' ? '(スキップクイック入力より)' : '(' + srvName + 'ペアの' + (log.serveType || '1st') + '発より)'}
                     </div>
+                    ${commentRow}
                 `;
                 
                 div.onclick = () => {
@@ -1213,6 +1379,9 @@
                     window.modalFollowBall = log.followBall || 'レシーブ(1st)';
                     window.currentSelectedPlayer = log.playerIdent;
                     
+                    document.getElementById('point-comment-input').value = log.comment || '';
+                    document.getElementById('point-star-checkbox').checked = !!log.isImportant;
+
                     document.querySelectorAll('.playerBtn').forEach(b => b.classList.remove('active-player'));
                     let targetPlayerBtn = document.getElementById('btn' + window.currentSelectedPlayer);
                     if(targetPlayerBtn) {
@@ -1287,13 +1456,25 @@
             if (confirm('直前の1ポイントを削除して元のスコアに戻しますか？')) {
                 window.savedMatches.pop(); window.rebuildScoreFromLogs(); window.resetInputState();
                 window.calculateStats(); 
+                if(window.currentMatchStorageKey) { window.updateCurrentStoredMatch(); }
             }
         };
 
         window.rebuildScoreFromLogs = function() {
-            window.ptsA = 0; window.ptsB = 0; window.gamesA = 0; window.gamesB = 0; window.gameScores = []; window.isMatchOver = false;
+            window.ptsA = window.initPtsA; 
+            window.ptsB = window.initPtsB; 
+            window.gamesA = window.initGamesA; 
+            window.gamesB = window.initGamesB;
+            window.gameScores = []; 
+            window.isMatchOver = false;
+            
             const sBtns = document.getElementById('shotButtons');
             if (sBtns) sBtns.className = 'shot-grid';
+
+            let totalInitGames = window.initGamesA + window.initGamesB;
+            for(let i = 0; i < totalInitGames; i++) {
+                window.gameScores.push({a: '-', b: '-'});
+            }
 
             window.savedMatches.forEach(log => {
                 log.gameNum = window.gamesA + window.gamesB + 1;
@@ -1343,6 +1524,7 @@
                 },
                 matchLimit: window.matchLimit,
                 finalScores: { ptsA: window.ptsA, ptsB: window.ptsB, gamesA: window.gamesA, gamesB: window.gamesB, gameScores: window.gameScores, isMatchOver: window.isMatchOver }, 
+                initState: { initGamesA: window.initGamesA, initGamesB: window.initGamesB, initPtsA: window.initPtsA, initPtsB: window.initPtsB },
                 logs: window.savedMatches
             };
             
@@ -1359,17 +1541,36 @@
                 const key = localStorage.key(i);
                 if (key && key.startsWith('ST_MATCH_')) {
                     hasData = true; const matchData = JSON.parse(localStorage.getItem(key));
-                    const item = document.createElement('div'); item.className = 'match-list-item';
+                    
+                    const item = document.createElement('div'); 
+                    item.className = 'match-list-item';
+                    
                     const textSpan = document.createElement('span');
                     textSpan.innerHTML = `<strong>${matchData.matchName}</strong><br><small style="color:#666;">${matchData.saveDate} / ${matchData.playerNames.A1}・${matchData.playerNames.A2} vs ${matchData.playerNames.B1}・${matchData.playerNames.B2}</small>`;
                     textSpan.onclick = () => window.loadSavedMatch(key);
                     item.appendChild(textSpan);
+
+                    const renameBtn = document.createElement('button');
+                    renameBtn.className = 'rename-btn';
+                    renameBtn.innerText = '名前変更';
+                    renameBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        let newName = prompt("新しい試合名を入力してください", matchData.matchName);
+                        if (newName === null) return;
+                        if (newName.trim() === "") { alert("試合名を空にすることはできません。"); return; }
+                        matchData.matchName = newName.trim();
+                        localStorage.setItem(key, JSON.stringify(matchData));
+                        window.renderSavedMatchesList();
+                    };
+                    item.appendChild(renameBtn);
+
                     const delBtn = document.createElement('button'); delBtn.className = 'delete-btn'; delBtn.innerText = '削除';
                     delBtn.onclick = (e) => {
                         e.stopPropagation(); 
                         if(confirm(`試合「${matchData.matchName}」を完全に削除しますか？`)) { localStorage.removeItem(key); window.renderSavedMatchesList(); }
                     };
-                    item.appendChild(delBtn); listArea.appendChild(item);
+                    item.appendChild(delBtn); 
+                    listArea.appendChild(item);
                 }
             }
             if(!hasData) listArea.innerHTML = '<p style="font-size:12px; color:#999; text-align:center;">保存された試合はありません</p>';
@@ -1383,9 +1584,25 @@
             window.matchLimit = matchData.matchLimit;
             window.ptsA = matchData.finalScores.ptsA; window.ptsB = matchData.finalScores.ptsB; window.gamesA = matchData.finalScores.gamesA; window.gamesB = matchData.finalScores.gamesB;
             window.gameScores = matchData.finalScores.gameScores || []; window.isMatchOver = matchData.finalScores.isMatchOver || false;
+            
+            if(matchData.initState) {
+                window.initGamesA = matchData.initState.initGamesA || 0;
+                window.initGamesB = matchData.initState.initGamesB || 0;
+                window.initPtsA = matchData.initState.initPtsA || 0;
+                window.initPtsB = matchData.initState.initPtsB || 0;
+            } else {
+                window.initGamesA = 0; window.initGamesB = 0; window.initPtsA = 0; window.initPtsB = 0;
+            }
+
             window.savedMatches = matchData.logs;
             
             window.syncAllPlayerNames();
+
+            document.getElementById('match-change-A1').value = document.getElementById('A1').value;
+            document.getElementById('match-change-A2').value = document.getElementById('A2').value;
+            document.getElementById('match-change-B1').value = document.getElementById('B1').value;
+            document.getElementById('match-change-B2').value = document.getElementById('B2').value;
+            document.getElementById('match-change-limit').value = window.matchLimit;
 
             document.getElementById('setup').classList.add('hidden');
             document.getElementById('match').classList.remove('hidden');
@@ -1395,6 +1612,7 @@
             document.getElementById('finishMatchBtn').classList.add('hidden');
             document.getElementById('backToMenuBtn').classList.remove('hidden');
             document.getElementById('view-mode-banner').classList.remove('hidden');
+            document.getElementById('live-change-panel').classList.add('hidden');
             
             window.rebuildScoreFromLogs();
             window.calculateStats();
@@ -1403,7 +1621,13 @@
         window.updateCurrentStoredMatch = function() {
             if(!window.currentMatchStorageKey) return;
             const matchData = JSON.parse(localStorage.getItem(window.currentMatchStorageKey)); if(!matchData) return;
-            matchData.logs = window.savedMatches; localStorage.setItem(window.currentMatchStorageKey, JSON.stringify(matchData));
+            matchData.playerNames.A1 = document.getElementById('A1').value;
+            matchData.playerNames.A2 = document.getElementById('A2').value;
+            matchData.playerNames.B1 = document.getElementById('B1').value;
+            matchData.playerNames.B2 = document.getElementById('B2').value;
+            matchData.matchLimit = window.matchLimit;
+            matchData.logs = window.savedMatches; 
+            localStorage.setItem(window.currentMatchStorageKey, JSON.stringify(matchData));
         };
 
         window.handleCourtClick = handleCourtClick;
@@ -1418,6 +1642,7 @@
         window.setModalResult = setModalResult;
         window.setModalMissReason = setModalMissReason;
         window.saveMatchPoint = saveMatchPoint;
+        window.skipPointAndAddScore = skipPointAndAddScore;
         window.undoPoint = undoPoint;
         window.finishAndSaveMatch = finishAndSaveMatch;
         window.goToHomeMenu = goToHomeMenu;
@@ -1426,7 +1651,7 @@
         window.undoCourtClick = undoCourtClick;
         window.clearCourtPos = clearCourtPos;
 
-        // 【追加】認証の着火
+        // 認証の着火
         window.initDeviceAuthentication();
     </script>
 </body>
